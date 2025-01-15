@@ -26,6 +26,7 @@ dependencies:
   google_fonts: ^6.1.0
   supabase_auth_ui: ^0.5.4
   supabase_flutter: ^2.3.4
+  equatable: ^2.0.5
 
 dev_dependencies:
   flutter_test:

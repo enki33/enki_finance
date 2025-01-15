@@ -39,7 +39,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
 
       return Right(Transaction.fromJson(response));
     } catch (e) {
-      return Left(DatabaseFailure(e.toString()));
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -81,7 +81,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
         response.map((json) => Transaction.fromJson(json)).toList(),
       );
     } catch (e) {
-      return Left(DatabaseFailure(e.toString()));
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -113,7 +113,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
 
       return Right(Transaction.fromJson(response));
     } catch (e) {
-      return Left(DatabaseFailure(e.toString()));
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -123,7 +123,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
       await supabase.from('transaction').delete().eq('id', transactionId);
       return const Right(unit);
     } catch (e) {
-      return Left(DatabaseFailure(e.toString()));
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -145,7 +145,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
 
       return Right(Map<String, double>.from(response));
     } catch (e) {
-      return Left(DatabaseFailure(e.toString()));
+      return Left(ServerFailure(e.toString()));
     }
   }
 }
