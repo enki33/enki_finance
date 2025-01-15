@@ -1,189 +1,145 @@
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+import 'package:flutter/foundation.dart';
 
 import '../../domain/entities/auth_user.dart';
-import '../../domain/exceptions/auth_exception.dart';
 import '../../domain/repositories/auth_repository.dart';
 
-/// Implementation of [AuthRepository] using Supabase as backend
 class SupabaseAuthRepository implements AuthRepository {
-  /// Creates a new [SupabaseAuthRepository] instance
-  const SupabaseAuthRepository(this._supabase);
+  const SupabaseAuthRepository(this._client);
 
-  final supabase.SupabaseClient _supabase;
+  final supabase.SupabaseClient _client;
+
+  AuthUser? _mapUserToAuthUser(supabase.User? user) {
+    if (user == null) return null;
+
+    return AuthUser(
+      id: user.id,
+      email: user.email ?? '',
+      firstName: user.userMetadata?['first_name'] ?? '',
+      lastName: user.userMetadata?['last_name'] ?? '',
+      createdAt: DateTime.parse(user.createdAt),
+      updatedAt: user.updatedAt != null
+          ? DateTime.parse(user.updatedAt!)
+          : DateTime.parse(user.createdAt),
+    );
+  }
+
+  @override
+  AuthUser? get currentUser => _mapUserToAuthUser(_client.auth.currentUser);
+
+  @override
+  Stream<AuthUser?> get onAuthStateChanged => _client.auth.onAuthStateChange
+      .map((event) => _mapUserToAuthUser(event.session?.user));
 
   @override
   Future<AuthUser?> getCurrentUser() async {
     try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) return null;
-      return _mapToAuthUser(user);
+      final user = _client.auth.currentUser;
+      return _mapUserToAuthUser(user);
     } catch (e) {
-      throw _handleError(e);
+      debugPrint('Error getting current user: $e');
+      rethrow;
     }
   }
 
   @override
-  Future<AuthUser> signInWithEmailAndPassword({
-    required String email,
-    required String password,
-  }) async {
+  Future<AuthUser?> signInWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
     try {
-      final response = await _supabase.auth.signInWithPassword(
+      final response = await _client.auth.signInWithPassword(
         email: email,
         password: password,
       );
-
-      if (response.user == null) {
-        throw const UnknownAuthException(
-          'No se pudo iniciar sesión. Por favor intenta más tarde.',
-        );
-      }
-
-      return _mapToAuthUser(response.user!);
+      return _mapUserToAuthUser(response.user);
     } catch (e) {
-      throw _handleError(e);
+      debugPrint('Error signing in: $e');
+      rethrow;
     }
   }
 
   @override
-  Future<AuthUser> signUpWithEmailAndPassword({
-    required String email,
-    required String password,
-    String? name,
-  }) async {
+  Future<AuthUser?> signUpWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
     try {
-      final response = await _supabase.auth.signUp(
+      final response = await _client.auth.signUp(
         email: email,
         password: password,
-        data: {
-          if (name != null) 'name': name,
-        },
       );
-
-      if (response.user == null) {
-        throw const UnknownAuthException(
-          'No se pudo crear la cuenta. Por favor intenta más tarde.',
-        );
-      }
-
-      return _mapToAuthUser(response.user!);
+      return _mapUserToAuthUser(response.user);
     } catch (e) {
-      throw _handleError(e);
+      debugPrint('Error signing up: $e');
+      rethrow;
     }
+  }
+
+  @override
+  Future<void> resetPassword(String email) async {
+    await _client.auth.resetPasswordForEmail(email);
   }
 
   @override
   Future<void> signOut() async {
-    try {
-      await _supabase.auth.signOut();
-    } catch (e) {
-      throw _handleError(e);
-    }
+    await _client.auth.signOut();
   }
 
   @override
-  Future<void> sendPasswordResetEmail(String email) async {
+  Future<void> updateUserProfile({
+    required String userId,
+    required String firstName,
+    required String lastName,
+  }) async {
     try {
-      await _supabase.auth.resetPasswordForEmail(email);
+      // Update app_user table
+      await _client.from('app_user').update({
+        'first_name': firstName,
+        'last_name': lastName,
+      }).eq('id', userId);
+
+      // Update auth user metadata
+      await _client.auth.updateUser(
+        supabase.UserAttributes(
+          data: {
+            'first_name': firstName,
+            'last_name': lastName,
+          },
+        ),
+      );
+
+      debugPrint('User profile updated successfully');
     } catch (e) {
-      throw _handleError(e);
+      debugPrint('Error updating user profile: $e');
+      if (e is supabase.PostgrestException) {
+        debugPrint('PostgreSQL Error Details:');
+        debugPrint('  Message: ${e.message}');
+        debugPrint('  Code: ${e.code}');
+        debugPrint('  Details: ${e.details}');
+        debugPrint('  Hint: ${e.hint}');
+      }
+      rethrow;
     }
   }
 
   @override
   Future<AuthUser> updateProfile({
     String? name,
+    String? firstName,
+    String? lastName,
     String? avatarUrl,
   }) async {
-    try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) {
-        throw const UnknownAuthException('No hay usuario autenticado.');
-      }
-
-      final response = await _supabase.auth.updateUser(
-        supabase.UserAttributes(
-          data: {
-            if (name != null) 'name': name,
-            if (avatarUrl != null) 'avatar_url': avatarUrl,
-          },
-        ),
-      );
-
-      if (response.user == null) {
-        throw const UnknownAuthException(
-          'No se pudo actualizar el perfil. Por favor intenta más tarde.',
-        );
-      }
-
-      return _mapToAuthUser(response.user!);
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  @override
-  Future<void> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  }) async {
-    try {
-      await _supabase.auth.updateUser(
-        supabase.UserAttributes(password: newPassword),
-      );
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  @override
-  Future<void> verifyEmail(String oobCode) async {
-    // Email verification disabled - no implementation needed
-    return;
-  }
-
-  /// Maps a Supabase [User] to our domain [AuthUser]
-  AuthUser _mapToAuthUser(supabase.User user) {
-    return AuthUser(
-      id: user.id,
-      email: user.email!,
-      name: user.userMetadata?['name'] as String?,
-      avatarUrl: user.userMetadata?['avatar_url'] as String?,
-      emailVerified: true,
-      createdAt: DateTime.parse(user.createdAt),
-      updatedAt: DateTime.parse(user.updatedAt ?? user.createdAt),
+    await _client.auth.updateUser(
+      supabase.UserAttributes(
+        data: {
+          if (name != null) 'name': name,
+          if (firstName != null) 'first_name': firstName,
+          if (lastName != null) 'last_name': lastName,
+          if (avatarUrl != null) 'avatar_url': avatarUrl,
+        },
+      ),
     );
-  }
-
-  /// Handles authentication errors and maps them to our domain exceptions
-  AuthException _handleError(dynamic error) {
-    if (error is supabase.AuthException) {
-      switch (error.statusCode) {
-        case '400':
-          if (error.message.contains('email')) {
-            return const InvalidEmailException();
-          }
-          if (error.message.contains('password')) {
-            return const InvalidPasswordException();
-          }
-          return UnknownAuthException(error.message);
-        case '401':
-          return const WrongPasswordException();
-        case '404':
-          return const UserNotFoundException();
-        case '409':
-          return const EmailAlreadyInUseException();
-        case '422':
-          return const InvalidPasswordException();
-        case '429':
-          return const UnknownAuthException(
-            'Demasiados intentos. Por favor intenta más tarde.',
-          );
-        default:
-          return UnknownAuthException(error.message);
-      }
-    }
-
-    return const UnknownAuthException();
+    return getCurrentUser().then((user) => user!);
   }
 }

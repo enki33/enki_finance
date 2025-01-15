@@ -1,6 +1,12 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+import 'package:flutter/foundation.dart' show debugPrint;
 import '../../domain/entities/auth_user.dart';
 import '../../domain/repositories/auth_repository.dart';
+import 'package:enki_finance/core/providers/supabase_provider.dart';
+import 'package:enki_finance/core/routing/app_router.dart';
+import '../../data/repositories/supabase_auth_repository.dart';
+import '../../data/repositories/auth_repository_provider.dart';
 
 part 'auth_provider.g.dart';
 
@@ -8,45 +14,32 @@ part 'auth_provider.g.dart';
 class Auth extends _$Auth {
   @override
   Future<AuthUser?> build() async {
-    return _authRepository.getCurrentUser();
+    final user = await _authRepository.getCurrentUser();
+    debugPrint('To login debug: Auth Provider - Current user: $user');
+    return user;
   }
 
   AuthRepository get _authRepository => ref.read(authRepositoryProvider);
 
-  Future<void> signInWithEmailAndPassword({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> handleAuthResponse(supabase.AuthResponse response) async {
+    debugPrint('Handling auth response: ${response.user?.email}');
     state = const AsyncLoading();
-    state =
-        await AsyncValue.guard(() => _authRepository.signInWithEmailAndPassword(
-              email: email,
-              password: password,
-            ));
-  }
-
-  Future<void> signUpWithEmailAndPassword({
-    required String email,
-    required String password,
-    String? name,
-  }) async {
-    state = const AsyncLoading();
-    state =
-        await AsyncValue.guard(() => _authRepository.signUpWithEmailAndPassword(
-              email: email,
-              password: password,
-              name: name,
-            ));
+    if (response.user != null) {
+      debugPrint('User is not null, getting current user');
+      final user = await _authRepository.getCurrentUser();
+      debugPrint('Current user: $user');
+      state = AsyncData(user);
+      ref.invalidate(routerProvider);
+    } else {
+      debugPrint('User is null, setting state to null');
+      state = const AsyncData(null);
+    }
   }
 
   Future<void> signOut() async {
     state = const AsyncLoading();
     await _authRepository.signOut();
     state = const AsyncData(null);
-  }
-
-  Future<void> sendPasswordResetEmail(String email) async {
-    await _authRepository.sendPasswordResetEmail(email);
   }
 
   Future<void> updateProfile({
@@ -60,17 +53,9 @@ class Auth extends _$Auth {
         ));
   }
 
-  Future<void> verifyEmail(String oobCode) async {
-    await _authRepository.verifyEmail(oobCode);
-  }
-
-  Future<void> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  }) async {
-    await _authRepository.changePassword(
-      currentPassword: currentPassword,
-      newPassword: newPassword,
-    );
+  Future<void> refreshUser() async {
+    state = const AsyncLoading();
+    final user = await _authRepository.getCurrentUser();
+    state = AsyncData(user);
   }
 }

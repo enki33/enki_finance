@@ -427,38 +427,42 @@ SELECT
     t.created_at
 FROM public.transfer t;
 
--- Vista: Análisis de transferencias por período
-CREATE OR REPLACE VIEW public.transfer_analysis AS
-WITH monthly_stats AS (
+    -- Vista: Análisis de transferencias por período
+    CREATE OR REPLACE VIEW public.transfer_analysis AS
+    WITH monthly_stats AS (
+        SELECT 
+            user_id,
+            date_trunc('month', transfer_date) as month,
+            transfer_type,
+            count(*) as transfer_count,
+            sum(converted_amount) as total_amount,
+            avg(converted_amount) as avg_amount
+        FROM public.transfer_summary
+        GROUP BY user_id, date_trunc('month', transfer_date), transfer_type
+    ),
+    monthly_changes AS (
+        SELECT 
+            *,
+            lag(total_amount) OVER (
+                PARTITION BY user_id, transfer_type 
+                ORDER BY month
+            ) as prev_month_amount
+        FROM monthly_stats
+    )
     SELECT 
         user_id,
-        date_trunc('month', transfer_date) as month,
+        month,
         transfer_type,
-        count(*) as transfer_count,
-        sum(converted_amount) as total_amount,
-        avg(converted_amount) as avg_amount
-    FROM public.transfer_summary
-    GROUP BY user_id, date_trunc('month', transfer_date), transfer_type
-)
-SELECT 
-    ms.*,
-    lag(total_amount) OVER (
-        PARTITION BY user_id, transfer_type 
-        ORDER lag(total_amount) OVER (
-        PARTITION BY user_id, transfer_type 
-        ORDER BY month
-    ) as prev_month_amount,
-    round(
-        (total_amount - lag(total_amount) OVER (
-            PARTITION BY user_id, transfer_type 
-            ORDER BY month
-        )) / nullif(lag(total_amount) OVER (
-            PARTITION BY user_id, transfer_type 
-            ORDER BY month
-        ), 0) * 100,
-        2
-    ) as month_over_month_change
-FROM monthly_stats;
+        transfer_count,
+        total_amount,
+        avg_amount,
+        prev_month_amount,
+        round(
+            (total_amount - prev_month_amount) / 
+            nullif(prev_month_amount, 0) * 100,
+            2
+        ) as month_over_month_change
+    FROM monthly_changes;
 
 -- #################################################
 -- FUNCIONES DE REPORTE

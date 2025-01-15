@@ -207,7 +207,7 @@ WITH monthly_expenses AS (
         count(*) as transaction_count
     FROM public.transaction t
     JOIN public.transaction_type tt ON tt.id = t.transaction_type_id
-    JOIN public.category c ON c.id = t.category
+    JOIN public.category c ON c.id = t.category_id  -- Changed from t.category to t.category_id
     WHERE tt.code = 'EXPENSE'
     GROUP BY t.user_id, date_trunc('month', t.transaction_date), c.name
 )
@@ -368,19 +368,16 @@ $$ LANGUAGE plpgsql;
 
 -- Índice para análisis por categoría
 CREATE INDEX idx_transaction_category_analysis 
-ON public.transaction (user_id, category, transaction_date)
-WHERE status = 'COMPLETED';
+ON public.transaction (user_id, category_id, transaction_date);
 
 -- Índice para análisis por jarra
 CREATE INDEX idx_transaction_jar_analysis 
-ON public.transaction (user_id, jar_id, transaction_date)
-WHERE status = 'COMPLETED';
+ON public.transaction (user_id, jar_id, transaction_date);
 
 -- Índice para análisis temporal
 CREATE INDEX idx_transaction_date_analysis 
 ON public.transaction (user_id, transaction_date)
-INCLUDE (amount)
-WHERE status = 'COMPLETED';
+INCLUDE (amount);
 
 -- #################################################
 -- FIN DEL SCRIPT

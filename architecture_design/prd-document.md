@@ -20,7 +20,7 @@ Este sistema está diseñado para gestionar finanzas personales implementando la
 - **State Management**: Riverpod
 - **Navegación**: Go Router
 - **Backend**: Supabase
-- **Sincronización Offline**: Powersync
+- **Sincronización Offline**: Brick https://getdutchie.github.io/brick/#/ (Por ahora no se implementa)
 - **Arquitectura**: Clean Architecture con enfoque Feature First
 
 #### 2.2 Estructura del Proyecto

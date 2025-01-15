@@ -1,0 +1,212 @@
+// Flutter Architecture and Development Guidelines
+// Version: 2.0
+// Purpose: Guide AI agents in implementing Flutter applications following best practices
+
+// Core Principles
+const corePrinciples = {
+    architecture: [
+        "Follow Clean Architecture principles (Presentation, Domain, Data layers)",
+        "Implement Feature-First folder structure for better scalability",
+        "Practice Separation of Concerns (SoC) at all levels",
+        "Use Domain-Driven Design (DDD) principles where applicable",
+        "Maintain high cohesion and loose coupling between components"
+    ],
+    
+    codeQuality: [
+        "Follow SOLID principles strictly",
+        "Implement comprehensive error handling and logging",
+        "Write self-documenting code with clear naming conventions",
+        "Maintain consistent code style across the project",
+        "Keep classes and methods focused and single-responsibility"
+    ],
+    
+    testing: [
+        "Follow Test-Driven Development (TDD) when possible",
+        "Maintain high test coverage for business logic",
+        "Implement integration tests for critical user flows",
+        "Use proper mocking and test doubles",
+        "Include performance testing for critical features"
+    ]
+};
+
+// Enhanced Project Structure
+const projectStructure = `
+lib/
+  ├── core/
+  │   ├── config/                 # App configuration, environment variables
+  │   ├── constants/              # App-wide constants
+  │   ├── error/                  # Error handling, custom exceptions
+  │   ├── network/               # Network handling, interceptors
+  │   ├── theme/                 # App theming
+  │   ├── utils/                 # Utility functions
+  │   └── widgets/               # Reusable widgets
+  │
+  ├── features/                  # Feature-first organization
+  │   └── feature_name/          # Each feature is self-contained
+  │       ├── data/
+  │       │   ├── datasources/   # Remote and local data sources
+  │       │   ├── models/        # Data models, DTOs
+  │       │   └── repositories/  # Repository implementations
+  │       ├── domain/
+  │       │   ├── entities/      # Business objects
+  │       │   ├── repositories/  # Repository interfaces
+  │       │   └── usecases/      # Business logic use cases
+  │       └── presentation/
+  │           ├── providers/     # Riverpod providers
+  │           ├── pages/         # Feature screens
+  │           └── widgets/       # Feature-specific widgets
+  │
+  ├── providers/                 # Global Riverpod providers
+  ├── l10n/                      # Localization
+  └── main.dart                  # App entry point
+
+test/
+  ├── unit/                      # Unit tests
+  ├── widget/                    # Widget tests
+  └── integration/               # Integration tests
+`;
+
+// State Management Guidelines
+const stateManagementGuidelines = {
+    riverpod: [
+        "Use Riverpod for dependency injection and state management",
+        "Implement proper provider organization and composition",
+        "Keep providers focused and single-responsibility",
+        "Utilize proper provider types (StateNotifierProvider, FutureProvider, StreamProvider)",
+        "Implement proper error handling with AsyncValue",
+        "Use ref.watch and ref.read appropriately",
+        "Implement proper provider disposal and cleanup",
+        "Utilize provider modifiers (.family, .autoDispose) when appropriate"
+    ],
+    
+    general: [
+        "Use Provider for simple state management",
+        "Implement proper state immutability",
+        "Follow unidirectional data flow",
+        "Handle loading and error states consistently",
+        "Implement proper state restoration"
+    ]
+};
+
+// Performance Optimization Rules
+const performanceRules = {
+    rendering: [
+        "Use const constructors whenever possible",
+        "Implement proper widget keys",
+        "Minimize rebuilds using proper widget composition",
+        "Use lazy loading for heavy components",
+        "Implement proper list view optimization with ListView.builder"
+    ],
+    
+    memory: [
+        "Implement proper image caching",
+        "Dispose controllers and streams properly",
+        "Use weak references when appropriate",
+        "Implement proper memory leak detection",
+        "Follow proper resource cleanup practices"
+    ],
+    
+    network: [
+        "Implement proper API caching",
+        "Use pagination for large data sets",
+        "Implement proper offline support",
+        "Optimize API calls using proper batching",
+        "Handle network errors gracefully"
+    ]
+};
+
+// Code Quality Standards
+const codeQualityStandards = {
+    naming: [
+        "Use meaningful and descriptive names",
+        "Follow Flutter naming conventions",
+        "Use proper prefix for private members",
+        "Maintain consistent naming across the project",
+        "Use proper case for different types (PascalCase for classes, camelCase for methods)"
+    ],
+    
+    documentation: [
+        "Write clear and concise documentation",
+        "Use proper dartdoc comments",
+        "Document complex business logic",
+        "Maintain up-to-date API documentation",
+        "Include usage examples in documentation"
+    ],
+    
+    testing: [
+        "Write testable code",
+        "Implement proper test coverage",
+        "Use proper test naming conventions",
+        "Implement proper test organization",
+        "Follow proper testing patterns"
+    ]
+};
+
+// Security Guidelines
+const securityGuidelines = {
+    dataProtection: [
+        "Implement proper data encryption",
+        "Use secure storage for sensitive data",
+        "Implement proper certificate pinning",
+        "Handle sensitive data properly",
+        "Implement proper authentication and authorization"
+    ],
+    
+    codeProtection: [
+        "Implement proper code obfuscation",
+        "Use proper dependency verification",
+        "Implement proper API key protection",
+        "Handle debug flags properly",
+        "Implement proper error logging without sensitive data"
+    ]
+};
+
+// Accessibility Guidelines
+const accessibilityGuidelines = {
+    implementation: [
+        "Use proper semantic widgets",
+        "Implement proper navigation for screen readers",
+        "Use proper color contrast",
+        "Implement proper text scaling",
+        "Handle different device orientations properly"
+    ],
+    
+    testing: [
+        "Test with screen readers",
+        "Verify color contrast ratios",
+        "Test with different text sizes",
+        "Verify keyboard navigation",
+        "Test with different accessibility settings"
+    ]
+};
+
+// Version Control Guidelines
+const versionControlGuidelines = {
+    commitPractices: [
+        "Write meaningful commit messages",
+        "Use proper branch naming conventions",
+        "Follow gitflow workflow",
+        "Implement proper code review process",
+        "Maintain clean commit history"
+    ],
+    
+    cicd: [
+        "Implement proper CI/CD pipeline",
+        "Use proper versioning system",
+        "Implement proper deployment strategies",
+        "Maintain proper testing in pipeline",
+        "Implement proper release management"
+    ]
+};
+
+// Export all guidelines
+module.exports = {
+    corePrinciples,
+    projectStructure,
+    stateManagementGuidelines,
+    performanceRules,
+    codeQualityStandards,
+    securityGuidelines,
+    accessibilityGuidelines,
+    versionControlGuidelines
+};

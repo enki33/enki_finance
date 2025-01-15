@@ -373,6 +373,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Programar limpieza automática
+CREATE EXTENSION IF NOT EXISTS "pg_cron";
+
 SELECT cron.schedule(
     'archive-completed-goals',
     '0 0 1 * *',  -- Ejecutar el primer día de cada mes a las 00:00

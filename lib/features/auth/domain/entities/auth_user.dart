@@ -8,9 +8,8 @@ class AuthUser with _$AuthUser {
   const factory AuthUser({
     required String id,
     required String email,
-    String? name,
-    String? avatarUrl,
-    @Default(false) bool emailVerified,
+    @Default('') String firstName,
+    @Default('') String lastName,
     required DateTime createdAt,
     required DateTime updatedAt,
   }) = _AuthUser;

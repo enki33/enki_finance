@@ -1,37 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import '../../features/auth/auth.dart';
+import '../../features/main/main_feature_barrel.dart';
+import '../providers/supabase_provider.dart';
+import '../../features/auth/data/repositories/auth_repository_provider.dart';
+import '../../features/transactions/presentation/pages/transactions_page.dart';
 
-part 'app_router.g.dart';
-
-@riverpod
-GoRouter router(RouterRef ref) {
-  final authState = ref.watch(authProvider);
+final routerProvider = Provider<GoRouter>((ref) {
+  final authRepository = ref.watch(authRepositoryProvider);
 
   return GoRouter(
-    initialLocation: '/',
-    redirect: (context, state) {
-      final isLoggedIn = authState.valueOrNull != null;
+    initialLocation: '/login',
+    redirect: (context, state) async {
+      final isLoggedIn = authRepository.currentUser != null;
+      final isAuthRoute = state.matchedLocation == '/login';
 
-      if (state.matchedLocation == '/') {
-        return isLoggedIn ? '/home' : '/login';
-      }
+      debugPrint(
+          'Router redirect - isLoggedIn: $isLoggedIn, isAuthRoute: $isAuthRoute, location: ${state.matchedLocation}');
 
-      if (!isLoggedIn &&
-          !state.matchedLocation.startsWith('/login') &&
-          !state.matchedLocation.startsWith('/signup') &&
-          !state.matchedLocation.startsWith('/forgot-password')) {
+      if (!isLoggedIn && !isAuthRoute) {
+        debugPrint(
+            'Not logged in and not on auth route - redirecting to /login');
         return '/login';
       }
 
-      if (isLoggedIn &&
-          (state.matchedLocation.startsWith('/login') ||
-              state.matchedLocation.startsWith('/signup') ||
-              state.matchedLocation.startsWith('/forgot-password'))) {
-        return '/home';
+      if (isLoggedIn && isAuthRoute) {
+        debugPrint('Logged in and on auth route - redirecting to /');
+        return '/';
       }
 
+      debugPrint('No redirect needed');
       return null;
     },
     routes: [
@@ -40,59 +40,51 @@ GoRouter router(RouterRef ref) {
         name: 'login',
         builder: (context, state) => const LoginPage(),
       ),
-      GoRoute(
-        path: '/signup',
-        name: 'signup',
-        builder: (context, state) => const SignupPage(),
-      ),
-      GoRoute(
-        path: '/forgot-password',
-        name: 'forgot-password',
-        builder: (context, state) => const ForgotPasswordPage(),
-      ),
-      GoRoute(
-        path: '/home',
-        name: 'home',
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Home Screen')),
-        ),
-      ),
-      GoRoute(
-        path: '/jars',
-        name: 'jars',
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Jars Screen')),
-        ),
-      ),
-      GoRoute(
-        path: '/transactions',
-        name: 'transactions',
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Transactions Screen')),
-        ),
-      ),
-      GoRoute(
-        path: '/reports',
-        name: 'reports',
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Reports Screen')),
-        ),
-      ),
-      GoRoute(
-        path: '/settings',
-        name: 'settings',
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Settings Screen')),
-        ),
+      ShellRoute(
+        builder: (context, state, child) => MainScreen(child: child),
+        routes: [
+          GoRoute(
+            path: '/',
+            name: 'home',
+            builder: (context, state) => const Center(
+              child: Text('Dashboard Content'),
+            ),
+          ),
+          GoRoute(
+            path: '/jars',
+            name: 'jars',
+            builder: (context, state) => const Center(
+              child: Text('Jars Content'),
+            ),
+          ),
+          GoRoute(
+            path: '/transactions',
+            name: 'transactions',
+            builder: (context, state) => TransactionsPage(
+              userId: ref.read(authRepositoryProvider).currentUser?.id ?? '',
+            ),
+          ),
+          GoRoute(
+            path: '/reports',
+            name: 'reports',
+            builder: (context, state) => const Center(
+              child: Text('Reports Content'),
+            ),
+          ),
+          GoRoute(
+            path: '/settings',
+            name: 'settings',
+            builder: (context, state) => const SettingsScreen(),
+            routes: [
+              GoRoute(
+                path: 'user-info',
+                name: 'user-info',
+                builder: (context, state) => const UserInfoPage(),
+              ),
+            ],
+          ),
+        ],
       ),
     ],
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Text(
-          'Error: ${state.error}',
-          style: const TextStyle(color: Colors.red),
-        ),
-      ),
-    ),
   );
-}
+});

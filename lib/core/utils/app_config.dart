@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
+import '../config/env_config.dart';
 
+/// Application configuration constants and settings
 class AppConfig {
-  static const String appName = 'Enki Finance';
-  static const String appVersion = '0.1.0';
+  const AppConfig._();
 
-  // Jar percentages
+  // Jar percentages (constants that don't need to be in .env)
   static const double necessitiesPercentage = 0.55;
   static const double longTermInvestmentPercentage = 0.10;
   static const double savingsPercentage = 0.10;
@@ -12,38 +13,27 @@ class AppConfig {
   static const double entertainmentPercentage = 0.10;
   static const double donationsPercentage = 0.05;
 
-  // Supabase configuration
-  static const String supabaseUrl = String.fromEnvironment(
-    'https://wzizrjgayseskstrcijz.supabase.co',
-    defaultValue: 'YOUR_SUPABASE_URL',
-  );
+  // App information (retrieved from environment)
+  static String get appName => EnvConfig.appName;
+  static String get appVersion => EnvConfig.appVersion;
+  static String get defaultCurrency => EnvConfig.defaultCurrency;
 
-  static const String supabaseAnonKey = String.fromEnvironment(
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6aXpyamdheXNlc2tzdHJjaWp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3MzQ1ODQsImV4cCI6MjA1MTMxMDU4NH0.5yNO-HtKf3DoQn_dXh4aUwUJsmYe-SEGHLvcya7Ac3A',
-    defaultValue: 'YOUR_SUPABASE_ANON_KEY',
-  );
+  // Feature flags (retrieved from environment)
+  static bool get enableNotifications => EnvConfig.enableNotifications;
+  static bool get enableMultiCurrency => EnvConfig.enableMultiCurrency;
+  static bool get enableRecurringTransactions =>
+      EnvConfig.enableRecurringTransactions;
+  static bool get enableExportToExcel => EnvConfig.enableExportToExcel;
 
-  // PowerSync configuration
-  static const String powersyncSecret = String.fromEnvironment(
-    'POWERSYNC_SECRET',
-    defaultValue: 'YOUR_POWERSYNC_SECRET',
-  );
+  // App settings (retrieved from environment)
+  static int get defaultNotificationMinutes =>
+      EnvConfig.defaultNotificationMinutes;
 
-  // Feature flags
-  static const bool enableNotifications = true;
-  static const bool enableMultiCurrency = true;
-  static const bool enableRecurringTransactions = true;
-  static const bool enableExportToExcel = true;
-
-  // Default currency
-  static const String defaultCurrency = 'MXN';
-
-  // App settings
-  static const int syncIntervalMinutes = 5;
-  static const int maxOfflineDays = 30;
-  static const int defaultNotificationMinutes = 1440; // 24 hours
-
-  // Debug settings
+  // Debug settings (not sensitive, can be hardcoded)
   static bool get isDebug => kDebugMode;
   static bool get enableLogging => kDebugMode;
+
+  // Supabase configuration (retrieved from environment)
+  static String get supabaseUrl => EnvConfig.supabaseUrl;
+  static String get supabaseAnonKey => EnvConfig.supabaseAnonKey;
 }

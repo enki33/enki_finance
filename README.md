@@ -5,7 +5,6 @@ Sistema de finanzas personales que implementa la metodología de 6 jarras de T. 
 ## Características
 
 - Implementación de la metodología de 6 jarras
-- Funcionamiento offline-first
 - Soporte para múltiples monedas
 - Transacciones recurrentes
 - Sistema de notificaciones
@@ -18,7 +17,6 @@ Sistema de finanzas personales que implementa la metodología de 6 jarras de T. 
 - Riverpod para state management
 - Go Router para navegación
 - Supabase para backend
-- PowerSync para sincronización offline
 - Clean Architecture
 - Feature First approach
 
@@ -27,7 +25,6 @@ Sistema de finanzas personales que implementa la metodología de 6 jarras de T. 
 - Flutter SDK (última versión estable)
 - Dart SDK (última versión estable)
 - Cuenta en Supabase
-- PowerSync API Key
 
 ## Configuración
 
@@ -41,7 +38,6 @@ cd enki_finance
 ```env
 SUPABASE_URL=tu_url_de_supabase
 SUPABASE_ANON_KEY=tu_clave_anonima_de_supabase
-POWERSYNC_SECRET=tu_clave_de_powersync
 ```
 
 3. Instalar dependencias y generar código:

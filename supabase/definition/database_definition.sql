@@ -20,14 +20,9 @@ CREATE TABLE public.currency (
     code varchar(3) NOT NULL UNIQUE,      -- Código ISO 4217 (ej: MXN, USD)
     name text NOT NULL,                   -- Nombre completo
     symbol varchar(5),                    -- Símbolo (ej: $, €)
-    is_system_default boolean DEFAULT false, -- Indica si es la moneda base (MXN)
     is_active boolean NOT NULL DEFAULT true,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_at timestamptz,
-    CONSTRAINT unique_system_default CHECK (
-        NOT is_system_default OR 
-        (is_system_default AND code = 'MXN')
-    )
 );
 
 COMMENT ON TABLE public.currency IS 'Catálogo de monedas soportadas';
@@ -144,7 +139,7 @@ CREATE TABLE public.subcategory (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     code varchar(50) NOT NULL UNIQUE,    -- Código único
     name text NOT NULL,                  -- Nombre descriptivo
-    description text,                    -- Descripción detallada
+    description text,                    --- Descripción detallada
     category_id uuid NOT NULL REFERENCES public.category(id),
     jar_id uuid REFERENCES public.jar(id), -- Nulo para categorías de ingreso
     is_system boolean DEFAULT false,     -- Indica si es subcategoría del sistema
@@ -362,6 +357,8 @@ BEFORE INSERT OR UPDATE ON public.recurring_transaction
 FOR EACH ROW EXECUTE FUNCTION check_recurring_transaction_jar_requirement();
 
 COMMENT ON TABLE public.recurring_transaction IS 'Configuración de transacciones recurrentes';
+
+
 -- Tabla: transfer
 -- Propósito: Registro de transferencias entre cuentas y jarras
 CREATE TABLE public.transfer (
@@ -787,6 +784,7 @@ DECLARE
     v_transaction_type_code text;
     v_old_balance numeric(15,2);
     v_new_balance numeric(15,2);
+    v_jar_record record;
 BEGIN
     -- Para transacciones
     IF TG_TABLE_NAME = 'transaction' THEN
@@ -813,17 +811,17 @@ BEGIN
             WHERE id = NEW.account_id AND user_id = NEW.user_id;
 
             -- Distribuir en jarras según porcentajes
-            FOR v_jar_id IN 
-                SELECT j.id 
+            FOR v_jar_record IN 
+                SELECT j.id, j.target_percentage 
                 FROM public.jar j
                 WHERE j.is_active = true
             LOOP
                 INSERT INTO public.jar_balance (user_id, jar_id, current_balance)
-                VALUES (NEW.user_id, v_jar_id, 
-                    NEW.amount * (SELECT target_percentage / 100 FROM public.jar WHERE id = v_jar_id))
+                VALUES (NEW.user_id, v_jar_record.id, 
+                    NEW.amount * (v_jar_record.target_percentage / 100))
                 ON CONFLICT (user_id, jar_id) DO UPDATE
                 SET current_balance = jar_balance.current_balance + 
-                    NEW.amount * (SELECT target_percentage / 100 FROM public.jar WHERE id = v_jar_id);
+                    NEW.amount * (v_jar_record.target_percentage / 100);
             END LOOP;
         END IF;
 
@@ -1070,7 +1068,7 @@ VALUES
     ('DEBIT_CARD', 'Tarjeta de Débito', 'Pago con tarjeta de débito', true),
     ('CREDIT_CARD', 'Tarjeta de Crédito', 'Pago con tarjeta de crédito', true),
     ('TRANSFER', 'Transferencia', 'Transferencia bancaria', true),
-    ('OTHER', 'Otro', '('OTHER', 'Otro', 'Otros medios de pago', true)
+    ('OTHER', 'Otro', 'Otros medios de pago', true)
 ON CONFLICT (code) DO NOTHING;
 
 -- Insertar tipos de cuenta del sistema
@@ -1127,10 +1125,10 @@ BEGIN
 
     -- Mostrar resumen
     RAISE NOTICE 'Instalación completada:';
-    RAISE NOTICE '- Tablas creadas: %', v_table_count;
-    RAISE NOTICE '- Triggers instalados: %', v_trigger_count;
-    RAISE NOTICE '- Políticas RLS: %', v_policy_count;
-    RAISE NOTICE '- Índices creados: %', v_index_count;
+    RAISE NOTICE 'Tablas creadas: %', v_table_count;
+    RAISE NOTICE 'Triggers instalados: %', v_trigger_count;
+    RAISE NOTICE 'Políticas RLS: %', v_policy_count;
+    RAISE NOTICE 'Índices creados: %', v_index_count;
 
     -- Verificar datos iniciales
     IF NOT EXISTS (SELECT 1 FROM public.currency WHERE is_system_default) THEN
@@ -1150,7 +1148,7 @@ BEGIN
         FROM public.jar 
         WHERE is_system
     ) != 100 THEN
-        RAISE EXCEPTION 'Error: Porcentajes de jarras no suman 100%';
+        RAISE EXCEPTION 'Error: Porcentajes de jarras no suman 100%%';
     END IF;
 
     RAISE NOTICE 'Verificación de datos iniciales completada con éxito';
