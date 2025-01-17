@@ -15,10 +15,8 @@ class SupabaseMaintenanceRepository implements MaintenanceRepository {
   @override
   Future<Either<Failure, List<Category>>> getCategories() async {
     try {
-      final categories = await _client
-          .from('categories')
-          .select()
-          .withConverter((data) => data
+      final categories = await _client.from('category').select().withConverter(
+          (data) => data
               .map((json) => CategoryModel.fromJson(json))
               .toList()
               .cast<CategoryModel>());
@@ -32,7 +30,7 @@ class SupabaseMaintenanceRepository implements MaintenanceRepository {
   Future<Either<Failure, Category>> getCategory(String id) async {
     try {
       final category = await _client
-          .from('categories')
+          .from('category')
           .select()
           .eq('id', id)
           .single()
@@ -46,9 +44,14 @@ class SupabaseMaintenanceRepository implements MaintenanceRepository {
   @override
   Future<Either<Failure, Category>> createCategory(Category category) async {
     try {
+      final model = CategoryModel.fromEntity(category);
+      final json = model.toJson();
+      // Remove id field to let Supabase generate it
+      json.remove('id');
+
       final savedCategory = await _client
-          .from('categories')
-          .insert(CategoryModel.fromEntity(category).toJson())
+          .from('category')
+          .insert(json)
           .select()
           .single()
           .withConverter((data) => CategoryModel.fromJson(data));
@@ -62,9 +65,9 @@ class SupabaseMaintenanceRepository implements MaintenanceRepository {
   Future<Either<Failure, Category>> updateCategory(Category category) async {
     try {
       final savedCategory = await _client
-          .from('categories')
+          .from('category')
           .update(CategoryModel.fromEntity(category).toJson())
-          .eq('id', category.id)
+          .eq('id', category.id!)
           .select()
           .single()
           .withConverter((data) => CategoryModel.fromJson(data));
@@ -78,7 +81,7 @@ class SupabaseMaintenanceRepository implements MaintenanceRepository {
   Future<Either<Failure, List<Subcategory>>> getSubcategories(
       {String? categoryId}) async {
     try {
-      var query = _client.from('subcategories').select();
+      var query = _client.from('subcategory').select();
       if (categoryId != null) {
         query = query.eq('category_id', categoryId);
       }
@@ -96,7 +99,7 @@ class SupabaseMaintenanceRepository implements MaintenanceRepository {
   Future<Either<Failure, Subcategory>> getSubcategory(String id) async {
     try {
       final subcategory = await _client
-          .from('subcategories')
+          .from('subcategory')
           .select()
           .eq('id', id)
           .single()
@@ -111,9 +114,14 @@ class SupabaseMaintenanceRepository implements MaintenanceRepository {
   Future<Either<Failure, Subcategory>> createSubcategory(
       Subcategory subcategory) async {
     try {
+      final model = SubcategoryModel.fromEntity(subcategory);
+      final json = model.toJson();
+      // Remove id field to let Supabase generate it
+      json.remove('id');
+
       final savedSubcategory = await _client
-          .from('subcategories')
-          .insert(SubcategoryModel.fromEntity(subcategory).toJson())
+          .from('subcategory')
+          .insert(json)
           .select()
           .single()
           .withConverter((data) => SubcategoryModel.fromJson(data));
@@ -128,9 +136,9 @@ class SupabaseMaintenanceRepository implements MaintenanceRepository {
       Subcategory subcategory) async {
     try {
       final savedSubcategory = await _client
-          .from('subcategories')
+          .from('subcategory')
           .update(SubcategoryModel.fromEntity(subcategory).toJson())
-          .eq('id', subcategory.id)
+          .eq('id', subcategory.id!)
           .select()
           .single()
           .withConverter((data) => SubcategoryModel.fromJson(data));
@@ -143,7 +151,7 @@ class SupabaseMaintenanceRepository implements MaintenanceRepository {
   @override
   Future<Either<Failure, Unit>> deleteCategory(String categoryId) async {
     try {
-      await _client.from('categories').delete().match({'id': categoryId});
+      await _client.from('category').delete().match({'id': categoryId});
 
       return const Right(unit);
     } catch (e) {
@@ -154,7 +162,7 @@ class SupabaseMaintenanceRepository implements MaintenanceRepository {
   @override
   Future<Either<Failure, Unit>> deleteSubcategory(String subcategoryId) async {
     try {
-      await _client.from('subcategories').delete().match({'id': subcategoryId});
+      await _client.from('subcategory').delete().match({'id': subcategoryId});
 
       return const Right(unit);
     } catch (e) {

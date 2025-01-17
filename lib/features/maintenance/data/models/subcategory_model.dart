@@ -7,13 +7,14 @@ part 'subcategory_model.g.dart';
 @freezed
 class SubcategoryModel with _$SubcategoryModel {
   const factory SubcategoryModel({
-    required String id,
+    String? id,
     required String code,
     required String name,
     String? description,
+    @JsonKey(name: 'is_system') @Default(true) bool isSystem,
+    @JsonKey(name: 'is_active') @Default(true) bool isActive,
     @JsonKey(name: 'category_id') required String categoryId,
-    @JsonKey(name: 'jar_id') required String jarId,
-    @Default(false) bool isSystem,
+    @JsonKey(name: 'jar_id') String? jarId,
     @JsonKey(name: 'created_at') required DateTime createdAt,
     @JsonKey(name: 'modified_at') DateTime? modifiedAt,
   }) = _SubcategoryModel;
@@ -29,9 +30,10 @@ class SubcategoryModel with _$SubcategoryModel {
         code: subcategory.code,
         name: subcategory.name,
         description: subcategory.description,
+        isSystem: subcategory.isSystem,
+        isActive: subcategory.isActive,
         categoryId: subcategory.categoryId,
         jarId: subcategory.jarId,
-        isSystem: subcategory.isSystem,
         createdAt: subcategory.createdAt,
         modifiedAt: subcategory.modifiedAt,
       );
@@ -41,9 +43,10 @@ class SubcategoryModel with _$SubcategoryModel {
         code: code,
         name: name,
         description: description,
+        isSystem: isSystem,
+        isActive: isActive,
         categoryId: categoryId,
         jarId: jarId,
-        isSystem: isSystem,
         createdAt: createdAt,
         modifiedAt: modifiedAt,
       );

@@ -7,11 +7,13 @@ part 'category_model.g.dart';
 @freezed
 class CategoryModel with _$CategoryModel {
   const factory CategoryModel({
-    required String id,
+    String? id,
     required String code,
     required String name,
     String? description,
-    @Default(false) bool isSystem,
+    @JsonKey(name: 'is_system') @Default(true) bool isSystem,
+    @JsonKey(name: 'is_active') @Default(true) bool isActive,
+    @JsonKey(name: 'transaction_type_id') required String transactionTypeId,
     @JsonKey(name: 'created_at') required DateTime createdAt,
     @JsonKey(name: 'modified_at') DateTime? modifiedAt,
   }) = _CategoryModel;
@@ -27,6 +29,8 @@ class CategoryModel with _$CategoryModel {
         name: category.name,
         description: category.description,
         isSystem: category.isSystem,
+        isActive: category.isActive,
+        transactionTypeId: category.transactionTypeId,
         createdAt: category.createdAt,
         modifiedAt: category.modifiedAt,
       );
@@ -37,6 +41,8 @@ class CategoryModel with _$CategoryModel {
         name: name,
         description: description,
         isSystem: isSystem,
+        isActive: isActive,
+        transactionTypeId: transactionTypeId,
         createdAt: createdAt,
         modifiedAt: modifiedAt,
       );

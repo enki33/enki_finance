@@ -21,6 +21,8 @@ class _CategoryFormDialogState extends ConsumerState<CategoryFormDialog> {
   late final TextEditingController _codeController;
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
+  late bool _isActive;
+  late bool _isSystem;
 
   @override
   void initState() {
@@ -30,6 +32,8 @@ class _CategoryFormDialogState extends ConsumerState<CategoryFormDialog> {
     _descriptionController = TextEditingController(
       text: widget.category?.description,
     );
+    _isActive = widget.category?.isActive ?? true;
+    _isSystem = widget.category?.isSystem ?? true;
   }
 
   @override
@@ -44,103 +48,135 @@ class _CategoryFormDialogState extends ConsumerState<CategoryFormDialog> {
   Widget build(BuildContext context) {
     final isEditing = widget.category != null;
     final isSaving = ref.watch(isSavingProvider);
-    final categoriesAsync = ref.watch(categoriesProvider);
+    final transactionTypesAsync = ref.watch(transactionTypesProvider);
 
     return AlertDialog(
       title: Text(isEditing ? 'Editar Categoría' : 'Nueva Categoría'),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _codeController,
-                enabled: !isSaving,
-                decoration: const InputDecoration(
-                  labelText: 'Código',
-                  hintText: 'Ingresa el código de la categoría',
-                  helperText:
-                      'Solo caracteres alfanuméricos y guiones bajos, 2-20 caracteres',
+      content: transactionTypesAsync.when(
+        data: (transactionTypes) => Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _codeController,
+                  enabled: !isSaving,
+                  decoration: const InputDecoration(
+                    labelText: 'Código',
+                    hintText: 'Ingresa el código de la categoría',
+                    helperText:
+                        'Solo caracteres alfanuméricos y guiones bajos, 2-20 caracteres',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'El código es requerido';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  // Format validation
-                  final formatError = MaintenanceValidators.validateCode(value);
-                  if (formatError != null) {
-                    return formatError;
-                  }
-
-                  // Uniqueness validation
-                  return categoriesAsync.whenOrNull(
-                    data: (categories) =>
-                        MaintenanceValidators.validateCodeUniqueness(
-                      value!,
-                      categories,
-                      excludeId: widget.category?.id,
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _nameController,
-                enabled: !isSaving,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre',
-                  hintText: 'Ingresa el nombre de la categoría',
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _nameController,
+                  enabled: !isSaving,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre',
+                    hintText: 'Ingresa el nombre de la categoría',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'El nombre es requerido';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'El nombre es requerido';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                enabled: !isSaving,
-                decoration: const InputDecoration(
-                  labelText: 'Descripción',
-                  hintText: 'Ingresa una descripción (opcional)',
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _descriptionController,
+                  enabled: !isSaving,
+                  decoration: const InputDecoration(
+                    labelText: 'Descripción',
+                    hintText: 'Ingresa una descripción (opcional)',
+                  ),
+                  maxLines: 3,
                 ),
-                maxLines: 3,
-              ),
-            ],
+                if (isEditing) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Text('Activo:'),
+                      const SizedBox(width: 8),
+                      Switch(
+                        value: _isActive,
+                        onChanged: isSaving
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  _isActive = value;
+                                });
+                              },
+                      ),
+                      const Spacer(),
+                      const Text('Sistema:'),
+                      const SizedBox(width: 8),
+                      Switch(
+                        value: _isSystem,
+                        onChanged: isSaving
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  _isSystem = value;
+                                });
+                              },
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Error: $error')),
       ),
       actions: [
         TextButton(
           onPressed: isSaving ? null : () => Navigator.of(context).pop(),
           child: const Text('Cancelar'),
         ),
-        ElevatedButton(
-          onPressed: isSaving ? null : _submit,
-          child: isSaving
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                  ),
-                )
-              : Text(isEditing ? 'Guardar' : 'Crear'),
+        transactionTypesAsync.when(
+          data: (transactionTypes) => ElevatedButton(
+            onPressed: isSaving ? null : () => _submit(transactionTypes),
+            child: isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(isEditing ? 'Guardar' : 'Crear'),
+          ),
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
         ),
       ],
     );
   }
 
-  void _submit() {
+  void _submit(Map<String, String> transactionTypes) {
     if (_formKey.currentState!.validate()) {
       final category = Category(
-        id: widget.category?.id ?? '',
+        id: widget.category?.id,
         code: _codeController.text,
         name: _nameController.text,
         description: _descriptionController.text.isEmpty
             ? null
             : _descriptionController.text,
-        isSystem: widget.category?.isSystem ?? false,
+        isSystem: _isSystem,
+        isActive: _isActive,
+        transactionTypeId:
+            widget.category?.transactionTypeId ?? transactionTypes['EXPENSE']!,
         createdAt: widget.category?.createdAt ?? DateTime.now(),
         modifiedAt: DateTime.now(),
       );

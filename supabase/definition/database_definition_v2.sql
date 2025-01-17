@@ -739,6 +739,26 @@ CREATE INDEX idx_credit_card_statement_due ON public.credit_card_statement(credi
 CREATE INDEX idx_installment_purchase_active ON public.installment_purchase(credit_card_id, next_installment_date)
     WHERE status = 'ACTIVE';
 
+
+
+
+-- First, drop the existing constraint
+ALTER TABLE public.account_type 
+DROP CONSTRAINT valid_system_account_types;
+
+-- Now we can insert the new type
+INSERT INTO public.account_type (
+    code,
+    name,
+    description,
+    is_system
+) VALUES (
+    'LOAN',
+    'Préstamos',
+    'Préstamos y créditos bancarios',
+    true
+);
+
 -- #################################################
 -- FIN DEL SCRIPT
 -- #################################################

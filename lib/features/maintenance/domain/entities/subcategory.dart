@@ -6,13 +6,14 @@ part 'subcategory.g.dart';
 @freezed
 class Subcategory with _$Subcategory {
   const factory Subcategory({
-    required String id,
+    String? id,
     required String code,
     required String name,
     String? description,
+    @Default(true) bool isSystem,
+    @Default(true) bool isActive,
     required String categoryId,
-    required String jarId,
-    @Default(false) bool isSystem,
+    String? jarId,
     required DateTime createdAt,
     DateTime? modifiedAt,
   }) = _Subcategory;

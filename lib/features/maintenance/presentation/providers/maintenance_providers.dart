@@ -1,7 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:enki_finance/core/providers/supabase_provider.dart';
 import 'package:enki_finance/features/maintenance/data/repositories/supabase_maintenance_repository.dart';
 import 'package:enki_finance/features/maintenance/domain/entities/category.dart';
 import 'package:enki_finance/features/maintenance/domain/entities/subcategory.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const int itemsPerPage = 10;
@@ -15,11 +16,16 @@ final maintenanceRepositoryProvider = Provider<SupabaseMaintenanceRepository>(
 // Search and filter providers
 final categorySearchQueryProvider = StateProvider<String>((ref) => '');
 final subcategorySearchQueryProvider = StateProvider<String>((ref) => '');
+final jarSearchQueryProvider = StateProvider<String>((ref) => '');
 final showSystemItemsProvider = StateProvider<bool>((ref) => true);
+final showActiveItemsProvider = StateProvider<bool>((ref) => true);
+final showActiveSubcategoriesProvider = StateProvider<bool>((ref) => true);
+final showActiveJarsProvider = StateProvider<bool>((ref) => true);
 
 // Pagination providers
 final categoryPageProvider = StateProvider<int>((ref) => 1);
 final subcategoryPageProvider = StateProvider<int>((ref) => 1);
+final jarPageProvider = StateProvider<int>((ref) => 1);
 
 // Categories provider with search, filter and pagination
 final categoriesProvider = FutureProvider<List<Category>>(
@@ -27,6 +33,7 @@ final categoriesProvider = FutureProvider<List<Category>>(
     final repository = ref.watch(maintenanceRepositoryProvider);
     final searchQuery = ref.watch(categorySearchQueryProvider).toLowerCase();
     final showSystemItems = ref.watch(showSystemItemsProvider);
+    final showActiveItems = ref.watch(showActiveItemsProvider);
     final page = ref.watch(categoryPageProvider);
 
     final result = await repository.getCategories();
@@ -41,6 +48,11 @@ final categoriesProvider = FutureProvider<List<Category>>(
               .where((category) => !category.isSystem)
               .toList();
         }
+
+        // Apply active items filter
+        filteredCategories = filteredCategories
+            .where((category) => category.isActive == showActiveItems)
+            .toList();
 
         // Apply search filter
         if (searchQuery.isNotEmpty) {
@@ -78,6 +90,7 @@ final subcategoriesProvider = FutureProvider.family<List<Subcategory>, String?>(
     final repository = ref.watch(maintenanceRepositoryProvider);
     final searchQuery = ref.watch(subcategorySearchQueryProvider).toLowerCase();
     final showSystemItems = ref.watch(showSystemItemsProvider);
+    final showActiveItems = ref.watch(showActiveSubcategoriesProvider);
     final page = ref.watch(subcategoryPageProvider);
 
     final result = await repository.getSubcategories(categoryId: categoryId);
@@ -92,6 +105,11 @@ final subcategoriesProvider = FutureProvider.family<List<Subcategory>, String?>(
               .where((subcategory) => !subcategory.isSystem)
               .toList();
         }
+
+        // Apply active items filter
+        filteredSubcategories = filteredSubcategories
+            .where((subcategory) => subcategory.isActive == showActiveItems)
+            .toList();
 
         // Apply search filter
         if (searchQuery.isNotEmpty) {
@@ -124,12 +142,43 @@ final subcategoriesProvider = FutureProvider.family<List<Subcategory>, String?>(
 );
 
 final jarsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final response = await Supabase.instance.client
-      .from('jars')
-      .select()
-      .order('name') as List<dynamic>;
+  final client = ref.watch(supabaseClientProvider);
+  final searchQuery = ref.watch(jarSearchQueryProvider).toLowerCase();
+  final showActiveItems = ref.watch(showActiveJarsProvider);
+  final page = ref.watch(jarPageProvider);
 
-  return response.map((json) => json as Map<String, dynamic>).toList();
+  final response =
+      await client.from('jar').select().order('name') as List<dynamic>;
+
+  var filteredJars =
+      response.map((json) => json as Map<String, dynamic>).toList();
+
+  // Apply active items filter
+  filteredJars =
+      filteredJars.where((jar) => jar['is_active'] == showActiveItems).toList();
+
+  // Apply search filter
+  if (searchQuery.isNotEmpty) {
+    filteredJars = filteredJars.where((jar) {
+      return jar['code'].toString().toLowerCase().contains(searchQuery) ||
+          jar['name'].toString().toLowerCase().contains(searchQuery) ||
+          (jar['description']?.toString().toLowerCase().contains(searchQuery) ??
+              false);
+    }).toList();
+  }
+
+  // Calculate total pages
+  final totalItems = filteredJars.length;
+  final totalPages = (totalItems / itemsPerPage).ceil();
+  ref.read(jarTotalPagesProvider.notifier).state = totalPages;
+
+  // Apply pagination
+  final startIndex = (page - 1) * itemsPerPage;
+  final endIndex = startIndex + itemsPerPage;
+  return filteredJars.sublist(
+    startIndex,
+    endIndex > totalItems ? totalItems : endIndex,
+  );
 });
 
 // Selection providers
@@ -143,3 +192,16 @@ final isDeletingProvider = StateProvider<bool>((ref) => false);
 // Pagination info providers
 final categoryTotalPagesProvider = StateProvider<int>((ref) => 1);
 final subcategoryTotalPagesProvider = StateProvider<int>((ref) => 1);
+final jarTotalPagesProvider = StateProvider<int>((ref) => 1);
+
+final transactionTypesProvider =
+    FutureProvider<Map<String, String>>((ref) async {
+  final client = ref.watch(supabaseClientProvider);
+  final result = await client
+      .from('transaction_type')
+      .select('id, code')
+      .eq('is_active', true);
+
+  return Map.fromEntries((result as List)
+      .map((type) => MapEntry(type['code'] as String, type['id'] as String)));
+});

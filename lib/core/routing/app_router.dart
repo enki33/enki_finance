@@ -7,6 +7,8 @@ import '../../features/main/main_feature_barrel.dart';
 import '../providers/supabase_provider.dart';
 import '../../features/auth/data/repositories/auth_repository_provider.dart';
 import '../../features/transactions/presentation/pages/transactions_page.dart';
+import '../../features/maintenance/presentation/pages/maintenance_page.dart';
+import '../../features/settings/presentation/pages/settings_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
@@ -74,12 +76,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/settings',
             name: 'settings',
-            builder: (context, state) => const SettingsScreen(),
+            builder: (context, state) => const SettingsPage(),
             routes: [
               GoRoute(
                 path: 'user-info',
                 name: 'user-info',
                 builder: (context, state) => const UserInfoPage(),
+              ),
+              GoRoute(
+                path: 'maintenance',
+                name: 'maintenance',
+                builder: (context, state) => const MaintenancePage(),
               ),
             ],
           ),

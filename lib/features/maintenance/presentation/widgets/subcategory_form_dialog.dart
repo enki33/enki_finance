@@ -173,15 +173,16 @@ class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
   void _submit() {
     if (_formKey.currentState!.validate()) {
       final subcategory = Subcategory(
-        id: widget.subcategory?.id ?? '',
+        id: widget.subcategory?.id,
         code: _codeController.text,
         name: _nameController.text,
         description: _descriptionController.text.isEmpty
             ? null
             : _descriptionController.text,
         categoryId: widget.categoryId,
-        jarId: _selectedJarId!,
+        jarId: _selectedJarId,
         isSystem: widget.subcategory?.isSystem ?? false,
+        isActive: widget.subcategory?.isActive ?? true,
         createdAt: widget.subcategory?.createdAt ?? DateTime.now(),
         modifiedAt: DateTime.now(),
       );

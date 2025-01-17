@@ -6,11 +6,13 @@ part 'category.g.dart';
 @freezed
 class Category with _$Category {
   const factory Category({
-    required String id,
+    String? id,
     required String code,
     required String name,
     String? description,
-    @Default(false) bool isSystem,
+    @Default(true) bool isSystem,
+    @Default(true) bool isActive,
+    required String transactionTypeId,
     required DateTime createdAt,
     DateTime? modifiedAt,
   }) = _Category;
