@@ -7,10 +7,8 @@ part 'category.g.dart';
 class Category with _$Category {
   const factory Category({
     String? id,
-    required String code,
     required String name,
     String? description,
-    @Default(true) bool isSystem,
     @Default(true) bool isActive,
     required String transactionTypeId,
     required DateTime createdAt,

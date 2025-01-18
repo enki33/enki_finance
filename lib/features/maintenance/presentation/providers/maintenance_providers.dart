@@ -17,7 +17,6 @@ final maintenanceRepositoryProvider = Provider<SupabaseMaintenanceRepository>(
 final categorySearchQueryProvider = StateProvider<String>((ref) => '');
 final subcategorySearchQueryProvider = StateProvider<String>((ref) => '');
 final jarSearchQueryProvider = StateProvider<String>((ref) => '');
-final showSystemItemsProvider = StateProvider<bool>((ref) => true);
 final showActiveItemsProvider = StateProvider<bool>((ref) => true);
 final showActiveSubcategoriesProvider = StateProvider<bool>((ref) => true);
 final showActiveJarsProvider = StateProvider<bool>((ref) => true);
@@ -32,7 +31,6 @@ final categoriesProvider = FutureProvider<List<Category>>(
   (ref) async {
     final repository = ref.watch(maintenanceRepositoryProvider);
     final searchQuery = ref.watch(categorySearchQueryProvider).toLowerCase();
-    final showSystemItems = ref.watch(showSystemItemsProvider);
     final showActiveItems = ref.watch(showActiveItemsProvider);
     final page = ref.watch(categoryPageProvider);
 
@@ -42,13 +40,6 @@ final categoriesProvider = FutureProvider<List<Category>>(
       (categories) {
         var filteredCategories = categories;
 
-        // Apply system items filter
-        if (!showSystemItems) {
-          filteredCategories = filteredCategories
-              .where((category) => !category.isSystem)
-              .toList();
-        }
-
         // Apply active items filter
         filteredCategories = filteredCategories
             .where((category) => category.isActive == showActiveItems)
@@ -57,8 +48,7 @@ final categoriesProvider = FutureProvider<List<Category>>(
         // Apply search filter
         if (searchQuery.isNotEmpty) {
           filteredCategories = filteredCategories.where((category) {
-            return category.code.toLowerCase().contains(searchQuery) ||
-                category.name.toLowerCase().contains(searchQuery) ||
+            return category.name.toLowerCase().contains(searchQuery) ||
                 (category.description?.toLowerCase().contains(searchQuery) ??
                     false);
           }).toList();
@@ -89,7 +79,6 @@ final subcategoriesProvider = FutureProvider.family<List<Subcategory>, String?>(
   (ref, categoryId) async {
     final repository = ref.watch(maintenanceRepositoryProvider);
     final searchQuery = ref.watch(subcategorySearchQueryProvider).toLowerCase();
-    final showSystemItems = ref.watch(showSystemItemsProvider);
     final showActiveItems = ref.watch(showActiveSubcategoriesProvider);
     final page = ref.watch(subcategoryPageProvider);
 
@@ -99,13 +88,6 @@ final subcategoriesProvider = FutureProvider.family<List<Subcategory>, String?>(
       (subcategories) {
         var filteredSubcategories = subcategories;
 
-        // Apply system items filter
-        if (!showSystemItems) {
-          filteredSubcategories = filteredSubcategories
-              .where((subcategory) => !subcategory.isSystem)
-              .toList();
-        }
-
         // Apply active items filter
         filteredSubcategories = filteredSubcategories
             .where((subcategory) => subcategory.isActive == showActiveItems)
@@ -114,8 +96,7 @@ final subcategoriesProvider = FutureProvider.family<List<Subcategory>, String?>(
         // Apply search filter
         if (searchQuery.isNotEmpty) {
           filteredSubcategories = filteredSubcategories.where((subcategory) {
-            return subcategory.code.toLowerCase().contains(searchQuery) ||
-                subcategory.name.toLowerCase().contains(searchQuery) ||
+            return subcategory.name.toLowerCase().contains(searchQuery) ||
                 (subcategory.description?.toLowerCase().contains(searchQuery) ??
                     false);
           }).toList();
@@ -160,8 +141,7 @@ final jarsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   // Apply search filter
   if (searchQuery.isNotEmpty) {
     filteredJars = filteredJars.where((jar) {
-      return jar['code'].toString().toLowerCase().contains(searchQuery) ||
-          jar['name'].toString().toLowerCase().contains(searchQuery) ||
+      return jar['name'].toString().toLowerCase().contains(searchQuery) ||
           (jar['description']?.toString().toLowerCase().contains(searchQuery) ??
               false);
     }).toList();
@@ -199,9 +179,9 @@ final transactionTypesProvider =
   final client = ref.watch(supabaseClientProvider);
   final result = await client
       .from('transaction_type')
-      .select('id, code')
+      .select('id, name')
       .eq('is_active', true);
 
   return Map.fromEntries((result as List)
-      .map((type) => MapEntry(type['code'] as String, type['id'] as String)));
+      .map((type) => MapEntry(type['name'] as String, type['id'] as String)));
 });

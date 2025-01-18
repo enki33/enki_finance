@@ -8,10 +8,8 @@ part 'subcategory_model.g.dart';
 class SubcategoryModel with _$SubcategoryModel {
   const factory SubcategoryModel({
     String? id,
-    required String code,
     required String name,
     String? description,
-    @JsonKey(name: 'is_system') @Default(true) bool isSystem,
     @JsonKey(name: 'is_active') @Default(true) bool isActive,
     @JsonKey(name: 'category_id') required String categoryId,
     @JsonKey(name: 'jar_id') String? jarId,
@@ -27,10 +25,8 @@ class SubcategoryModel with _$SubcategoryModel {
   factory SubcategoryModel.fromEntity(Subcategory subcategory) =>
       SubcategoryModel(
         id: subcategory.id,
-        code: subcategory.code,
         name: subcategory.name,
         description: subcategory.description,
-        isSystem: subcategory.isSystem,
         isActive: subcategory.isActive,
         categoryId: subcategory.categoryId,
         jarId: subcategory.jarId,
@@ -40,10 +36,8 @@ class SubcategoryModel with _$SubcategoryModel {
 
   Subcategory toEntity() => Subcategory(
         id: id,
-        code: code,
         name: name,
         description: description,
-        isSystem: isSystem,
         isActive: isActive,
         categoryId: categoryId,
         jarId: jarId,

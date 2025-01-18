@@ -18,27 +18,24 @@ class CategoryFormDialog extends ConsumerStatefulWidget {
 
 class _CategoryFormDialogState extends ConsumerState<CategoryFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _codeController;
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late bool _isActive;
-  late bool _isSystem;
+  String? _selectedTransactionTypeId;
 
   @override
   void initState() {
     super.initState();
-    _codeController = TextEditingController(text: widget.category?.code);
     _nameController = TextEditingController(text: widget.category?.name);
     _descriptionController = TextEditingController(
       text: widget.category?.description,
     );
     _isActive = widget.category?.isActive ?? true;
-    _isSystem = widget.category?.isSystem ?? true;
+    _selectedTransactionTypeId = widget.category?.transactionTypeId;
   }
 
   @override
   void dispose() {
-    _codeController.dispose();
     _nameController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -59,23 +56,6 @@ class _CategoryFormDialogState extends ConsumerState<CategoryFormDialog> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextFormField(
-                  controller: _codeController,
-                  enabled: !isSaving,
-                  decoration: const InputDecoration(
-                    labelText: 'Código',
-                    hintText: 'Ingresa el código de la categoría',
-                    helperText:
-                        'Solo caracteres alfanuméricos y guiones bajos, 2-20 caracteres',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'El código es requerido';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
                 TextFormField(
                   controller: _nameController,
                   enabled: !isSaving,
@@ -100,6 +80,33 @@ class _CategoryFormDialogState extends ConsumerState<CategoryFormDialog> {
                   ),
                   maxLines: 3,
                 ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: _selectedTransactionTypeId,
+                  decoration: const InputDecoration(
+                    labelText: 'Tipo de Transacción',
+                    hintText: 'Selecciona el tipo de transacción',
+                  ),
+                  items: transactionTypes.entries.map((entry) {
+                    return DropdownMenuItem(
+                      value: entry.value,
+                      child: Text(entry.key),
+                    );
+                  }).toList(),
+                  onChanged: isSaving
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _selectedTransactionTypeId = value;
+                          });
+                        },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'El tipo de transacción es requerido';
+                    }
+                    return null;
+                  },
+                ),
                 if (isEditing) ...[
                   const SizedBox(height: 16),
                   Row(
@@ -116,19 +123,6 @@ class _CategoryFormDialogState extends ConsumerState<CategoryFormDialog> {
                                 });
                               },
                       ),
-                      const Spacer(),
-                      const Text('Sistema:'),
-                      const SizedBox(width: 8),
-                      Switch(
-                        value: _isSystem,
-                        onChanged: isSaving
-                            ? null
-                            : (value) {
-                                setState(() {
-                                  _isSystem = value;
-                                });
-                              },
-                      ),
                     ],
                   ),
                 ],
@@ -137,28 +131,30 @@ class _CategoryFormDialogState extends ConsumerState<CategoryFormDialog> {
           ),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
+        error: (error, stack) => Center(
+          child: Text('Error: ${error.toString()}'),
+        ),
       ),
       actions: [
         TextButton(
-          onPressed: isSaving ? null : () => Navigator.of(context).pop(),
+          onPressed: isSaving ? null : () => Navigator.pop(context),
           child: const Text('Cancelar'),
         ),
-        transactionTypesAsync.when(
-          data: (transactionTypes) => ElevatedButton(
-            onPressed: isSaving ? null : () => _submit(transactionTypes),
-            child: isSaving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
-                  )
-                : Text(isEditing ? 'Guardar' : 'Crear'),
-          ),
-          loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
+        FilledButton(
+          onPressed: isSaving
+              ? null
+              : () => transactionTypesAsync.whenOrNull(
+                    data: (transactionTypes) => _submit(transactionTypes),
+                  ),
+          child: isSaving
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                  ),
+                )
+              : Text(isEditing ? 'Guardar' : 'Crear'),
         ),
       ],
     );
@@ -168,15 +164,12 @@ class _CategoryFormDialogState extends ConsumerState<CategoryFormDialog> {
     if (_formKey.currentState!.validate()) {
       final category = Category(
         id: widget.category?.id,
-        code: _codeController.text,
         name: _nameController.text,
         description: _descriptionController.text.isEmpty
             ? null
             : _descriptionController.text,
-        isSystem: _isSystem,
         isActive: _isActive,
-        transactionTypeId:
-            widget.category?.transactionTypeId ?? transactionTypes['EXPENSE']!,
+        transactionTypeId: _selectedTransactionTypeId!,
         createdAt: widget.category?.createdAt ?? DateTime.now(),
         modifiedAt: DateTime.now(),
       );

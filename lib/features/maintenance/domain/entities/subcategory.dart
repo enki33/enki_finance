@@ -7,10 +7,8 @@ part 'subcategory.g.dart';
 class Subcategory with _$Subcategory {
   const factory Subcategory({
     String? id,
-    required String code,
     required String name,
     String? description,
-    @Default(true) bool isSystem,
     @Default(true) bool isActive,
     required String categoryId,
     String? jarId,

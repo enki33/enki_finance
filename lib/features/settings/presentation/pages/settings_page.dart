@@ -55,10 +55,8 @@ class SettingsPage extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.account_balance),
             title: const Text('Cuentas'),
-            subtitle: const Text('Administrar cuentas bancarias'),
-            onTap: () {
-              // TODO: Navigate to accounts management
-            },
+            subtitle: const Text('Administrar cuentas y tarjetas'),
+            onTap: () => context.go('/settings/accounts'),
           ),
           ListTile(
             leading: const Icon(Icons.savings),

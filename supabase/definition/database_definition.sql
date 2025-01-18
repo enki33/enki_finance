@@ -210,13 +210,15 @@ CREATE TABLE public.account (
     user_id UUID NOT NULL REFERENCES public.app_user(id),
     account_type_id uuid NOT NULL REFERENCES public.account_type(id),
     name text NOT NULL,                  -- Nombre descriptivo
+    code text NOT NULL,                  -- Código único de la cuenta
     description text,                    -- Descripción detallada
     currency_id uuid NOT NULL REFERENCES public.currency(id),
     current_balance numeric(15,2) NOT NULL DEFAULT 0,
     is_active boolean NOT NULL DEFAULT true,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_at timestamptz,
-    CONSTRAINT unique_account_name_per_user UNIQUE (user_id, name)
+    CONSTRAINT unique_account_name_per_user UNIQUE (user_id, name),
+    CONSTRAINT unique_account_code_per_user UNIQUE (user_id, code)
 );
 
 COMMENT ON TABLE public.account IS 'Cuentas financieras de los usuarios';

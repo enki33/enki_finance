@@ -21,25 +21,24 @@ class SubcategoryFormDialog extends ConsumerStatefulWidget {
 
 class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _codeController;
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   String? _selectedJarId;
+  late bool _isActive;
 
   @override
   void initState() {
     super.initState();
-    _codeController = TextEditingController(text: widget.subcategory?.code);
     _nameController = TextEditingController(text: widget.subcategory?.name);
     _descriptionController = TextEditingController(
       text: widget.subcategory?.description,
     );
     _selectedJarId = widget.subcategory?.jarId;
+    _isActive = widget.subcategory?.isActive ?? true;
   }
 
   @override
   void dispose() {
-    _codeController.dispose();
     _nameController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -61,35 +60,6 @@ class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(
-                controller: _codeController,
-                enabled: !isSaving,
-                decoration: const InputDecoration(
-                  labelText: 'Código',
-                  hintText: 'Ingresa el código de la subcategoría',
-                  helperText:
-                      'Solo caracteres alfanuméricos y guiones bajos, 2-20 caracteres',
-                ),
-                validator: (value) {
-                  // Format validation
-                  final formatError = MaintenanceValidators.validateCode(value);
-                  if (formatError != null) {
-                    return formatError;
-                  }
-
-                  // Uniqueness validation
-                  return subcategoriesAsync.whenOrNull(
-                    data: (subcategories) =>
-                        MaintenanceValidators.validateSubcategoryCodeUniqueness(
-                      value!,
-                      widget.categoryId,
-                      subcategories,
-                      excludeId: widget.subcategory?.id,
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
               TextFormField(
                 controller: _nameController,
                 enabled: !isSaving,
@@ -145,6 +115,25 @@ class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
                 loading: () => const CircularProgressIndicator(),
                 error: (error, stack) => Text('Error: $error'),
               ),
+              if (isEditing) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Text('Activo'),
+                    const SizedBox(width: 8),
+                    Switch(
+                      value: _isActive,
+                      onChanged: isSaving
+                          ? null
+                          : (value) {
+                              setState(() {
+                                _isActive = value;
+                              });
+                            },
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -174,15 +163,13 @@ class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
     if (_formKey.currentState!.validate()) {
       final subcategory = Subcategory(
         id: widget.subcategory?.id,
-        code: _codeController.text,
         name: _nameController.text,
         description: _descriptionController.text.isEmpty
             ? null
             : _descriptionController.text,
         categoryId: widget.categoryId,
         jarId: _selectedJarId,
-        isSystem: widget.subcategory?.isSystem ?? false,
-        isActive: widget.subcategory?.isActive ?? true,
+        isActive: _isActive,
         createdAt: widget.subcategory?.createdAt ?? DateTime.now(),
         modifiedAt: DateTime.now(),
       );

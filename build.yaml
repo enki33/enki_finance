@@ -1,0 +1,15 @@
+targets:
+  $default:
+    builders:
+      freezed:
+        generate_for:
+          include:
+            - lib/features/*/domain/entities/**.dart
+            - lib/features/*/data/models/**.dart
+      json_serializable:
+        options:
+          explicit_to_json: true
+        generate_for:
+          include:
+            - lib/features/*/domain/entities/**.dart
+            - lib/features/*/data/models/**.dart 
