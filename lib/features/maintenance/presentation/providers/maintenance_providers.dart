@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:enki_finance/core/providers/supabase_provider.dart';
 import 'package:enki_finance/features/maintenance/data/repositories/supabase_maintenance_repository.dart';
@@ -128,37 +129,79 @@ final jarsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final showActiveItems = ref.watch(showActiveJarsProvider);
   final page = ref.watch(jarPageProvider);
 
-  final response =
-      await client.from('jar').select().order('name') as List<dynamic>;
+  try {
+    debugPrint('Fetching jars from Supabase...');
+    final response = await client.from('jar').select().order('name');
 
-  var filteredJars =
-      response.map((json) => json as Map<String, dynamic>).toList();
+    debugPrint('Supabase response: $response');
 
-  // Apply active items filter
-  filteredJars =
-      filteredJars.where((jar) => jar['is_active'] == showActiveItems).toList();
+    if (response == null) {
+      debugPrint('Response is null');
+      ref.read(jarTotalPagesProvider.notifier).state = 1;
+      return [];
+    }
 
-  // Apply search filter
-  if (searchQuery.isNotEmpty) {
+    final List<dynamic> jarsList = response;
+    debugPrint('Found ${jarsList.length} jars');
+
+    if (jarsList.isEmpty) {
+      ref.read(jarTotalPagesProvider.notifier).state = 1;
+      return [];
+    }
+
+    var filteredJars =
+        jarsList.map((json) => json as Map<String, dynamic>).toList();
+
+    // Apply active items filter
     filteredJars = filteredJars.where((jar) {
-      return jar['name'].toString().toLowerCase().contains(searchQuery) ||
-          (jar['description']?.toString().toLowerCase().contains(searchQuery) ??
-              false);
+      final isActive = jar['is_active'] as bool?;
+      return (isActive ?? true) == showActiveItems;
     }).toList();
+    debugPrint('After active filter: ${filteredJars.length} jars');
+
+    // Apply search filter
+    if (searchQuery.isNotEmpty) {
+      filteredJars = filteredJars.where((jar) {
+        return jar['name'].toString().toLowerCase().contains(searchQuery) ||
+            (jar['description']
+                    ?.toString()
+                    .toLowerCase()
+                    .contains(searchQuery) ??
+                false);
+      }).toList();
+      debugPrint('After search filter: ${filteredJars.length} jars');
+    }
+
+    // If no jars after filtering, return empty list
+    if (filteredJars.isEmpty) {
+      ref.read(jarTotalPagesProvider.notifier).state = 1;
+      return [];
+    }
+
+    // Calculate total pages
+    final totalItems = filteredJars.length;
+    final totalPages = (totalItems / itemsPerPage).ceil();
+    ref.read(jarTotalPagesProvider.notifier).state = totalPages;
+
+    // Apply pagination
+    final startIndex = (page - 1) * itemsPerPage;
+    final endIndex = startIndex + itemsPerPage;
+
+    // Handle case where startIndex is beyond list bounds
+    if (startIndex >= totalItems) {
+      ref.read(jarPageProvider.notifier).state = 1;
+      return filteredJars.sublist(0, itemsPerPage.clamp(0, totalItems));
+    }
+
+    return filteredJars.sublist(
+      startIndex,
+      endIndex > totalItems ? totalItems : endIndex,
+    );
+  } catch (e, stack) {
+    debugPrint('Error fetching jars: $e');
+    debugPrint('Stack trace: $stack');
+    throw e;
   }
-
-  // Calculate total pages
-  final totalItems = filteredJars.length;
-  final totalPages = (totalItems / itemsPerPage).ceil();
-  ref.read(jarTotalPagesProvider.notifier).state = totalPages;
-
-  // Apply pagination
-  final startIndex = (page - 1) * itemsPerPage;
-  final endIndex = startIndex + itemsPerPage;
-  return filteredJars.sublist(
-    startIndex,
-    endIndex > totalItems ? totalItems : endIndex,
-  );
 });
 
 // Selection providers

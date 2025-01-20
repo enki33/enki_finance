@@ -8,6 +8,8 @@ import '../providers/supabase_provider.dart';
 import '../../features/auth/data/repositories/auth_repository_provider.dart';
 import '../../features/transactions/presentation/pages/transactions_page.dart';
 import '../../features/maintenance/presentation/pages/maintenance_page.dart';
+import '../../features/maintenance/presentation/pages/jars_page.dart';
+import '../../features/maintenance/presentation/pages/categories_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/account/presentation/pages/accounts_page.dart';
 
@@ -90,9 +92,40 @@ final routerProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => const MaintenancePage(),
               ),
               GoRoute(
+                path: 'categories',
+                name: 'categories',
+                builder: (context, state) => const CategoriesPage(),
+              ),
+              GoRoute(
+                path: 'jars',
+                name: 'settings-jars',
+                builder: (context, state) => const JarsPage(),
+              ),
+              GoRoute(
                 path: 'accounts',
                 name: 'accounts',
                 builder: (context, state) => const AccountsPage(),
+              ),
+              GoRoute(
+                path: 'notifications',
+                name: 'notifications',
+                builder: (context, state) => const Center(
+                  child: Text('Notifications Settings'),
+                ),
+              ),
+              GoRoute(
+                path: 'theme',
+                name: 'theme',
+                builder: (context, state) => const Center(
+                  child: Text('Theme Settings'),
+                ),
+              ),
+              GoRoute(
+                path: 'language',
+                name: 'language',
+                builder: (context, state) => const Center(
+                  child: Text('Language Settings'),
+                ),
               ),
             ],
           ),

@@ -7,11 +7,11 @@ part 'account.g.dart';
 class Account with _$Account {
   const factory Account({
     String? id,
-    required String userId,
-    required String accountTypeId,
+    @JsonKey(name: 'user_id') required String userId,
+    @JsonKey(name: 'account_type_id') required String accountTypeId,
     required String name,
     String? description,
-    required String currencyId,
+    @JsonKey(name: 'currency_id') required String currencyId,
     @JsonKey(name: 'current_balance') @Default(0) double currentBalance,
     @JsonKey(name: 'is_active') @Default(true) bool isActive,
     @JsonKey(name: 'created_at') required DateTime createdAt,

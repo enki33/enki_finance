@@ -1,53 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:enki_finance/features/auth/presentation/providers/auth_provider.dart';
-import 'package:enki_finance/features/account/domain/entities/account.dart';
-import 'package:enki_finance/features/account/presentation/providers/account_providers.dart';
+import 'package:enki_finance/features/maintenance/presentation/providers/maintenance_providers.dart';
 
-class AccountFormDialog extends ConsumerStatefulWidget {
-  final Map<String, dynamic>? account;
+class JarFormDialog extends ConsumerStatefulWidget {
+  final Map<String, dynamic>? jar;
 
-  const AccountFormDialog({super.key, this.account});
+  const JarFormDialog({super.key, this.jar});
 
   @override
-  ConsumerState<AccountFormDialog> createState() => _AccountFormDialogState();
+  ConsumerState<JarFormDialog> createState() => _JarFormDialogState();
 }
 
-class _AccountFormDialogState extends ConsumerState<AccountFormDialog> {
+class _JarFormDialogState extends ConsumerState<JarFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
-  late final TextEditingController _currentBalanceController;
+  late final TextEditingController _percentageController;
   late bool _isActive;
 
   @override
   void initState() {
     super.initState();
     _nameController =
-        TextEditingController(text: widget.account?['name'] as String?);
+        TextEditingController(text: widget.jar?['name'] as String?);
     _descriptionController =
-        TextEditingController(text: widget.account?['description'] as String?);
-    _currentBalanceController = TextEditingController(
-        text: widget.account?['current_balance']?.toString() ?? '0');
-    _isActive = widget.account?['is_active'] as bool? ?? true;
+        TextEditingController(text: widget.jar?['description'] as String?);
+    _percentageController = TextEditingController(
+        text: widget.jar?['target_percentage']?.toString() ?? '0');
+    _isActive = widget.jar?['is_active'] as bool? ?? true;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    _currentBalanceController.dispose();
+    _percentageController.dispose();
     super.dispose();
   }
 
-  bool get isEditing => widget.account != null;
+  bool get isEditing => widget.jar != null;
 
   @override
   Widget build(BuildContext context) {
     final isSaving = ref.watch(isSavingProvider);
 
     return AlertDialog(
-      title: Text(isEditing ? 'Editar Cuenta' : 'Nueva Cuenta'),
+      title: Text(isEditing ? 'Editar Jarra' : 'Nueva Jarra'),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -80,19 +78,24 @@ class _AccountFormDialogState extends ConsumerState<AccountFormDialog> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _currentBalanceController,
+                controller: _percentageController,
                 decoration: const InputDecoration(
-                  labelText: 'Balance Inicial',
+                  labelText: 'Porcentaje objetivo',
                   border: OutlineInputBorder(),
+                  suffixText: '%',
                 ),
                 enabled: !isSaving,
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'El balance inicial es requerido';
+                    return 'El porcentaje es requerido';
                   }
-                  if (double.tryParse(value) == null) {
-                    return 'El balance inicial debe ser un número válido';
+                  final percentage = double.tryParse(value);
+                  if (percentage == null) {
+                    return 'Ingrese un número válido';
+                  }
+                  if (percentage < 0 || percentage > 100) {
+                    return 'El porcentaje debe estar entre 0 y 100';
                   }
                   return null;
                 },
@@ -122,10 +125,10 @@ class _AccountFormDialogState extends ConsumerState<AccountFormDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: isSaving ? null : () => Navigator.of(context).pop(),
+          onPressed: isSaving ? null : () => Navigator.pop(context),
           child: const Text('Cancelar'),
         ),
-        ElevatedButton(
+        FilledButton(
           onPressed: isSaving ? null : _submit,
           child: Text(isEditing ? 'Guardar' : 'Crear'),
         ),
@@ -135,34 +138,19 @@ class _AccountFormDialogState extends ConsumerState<AccountFormDialog> {
 
   void _submit() {
     if (_formKey.currentState!.validate()) {
-      final authState = ref.read(authProvider);
-      final currentUser = authState.valueOrNull;
-      if (currentUser == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error: No hay un usuario autenticado')),
-        );
-        return;
-      }
-
-      final account = {
-        if (widget.account != null) 'id': widget.account!['id'],
-        'user_id': currentUser.id,
-        'account_type_id':
-            '00000000-0000-0000-0000-000000000001', // Default type
+      final jar = {
+        if (widget.jar != null) 'id': widget.jar!['id'],
         'name': _nameController.text,
         'description': _descriptionController.text.isEmpty
             ? null
             : _descriptionController.text,
-        'currency_id':
-            '00000000-0000-0000-0000-000000000001', // Default currency
-        'current_balance': double.parse(_currentBalanceController.text),
+        'target_percentage': double.parse(_percentageController.text),
         'is_active': _isActive,
-        if (widget.account == null)
-          'created_at': DateTime.now().toIso8601String(),
+        if (widget.jar == null) 'created_at': DateTime.now().toIso8601String(),
         'modified_at': DateTime.now().toIso8601String(),
       };
 
-      Navigator.pop(context, account);
+      Navigator.pop(context, jar);
     }
   }
 }

@@ -23,7 +23,13 @@ class MainScreen extends HookConsumerWidget {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Mantenimiento',
+            onPressed: () => context.go('/settings/maintenance'),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Cerrar sesión',
             onPressed: () async {
               await ref.read(authProvider.notifier).signOut();
               if (context.mounted) {
@@ -47,10 +53,10 @@ class MainScreen extends HookConsumerWidget {
               context.goNamed('transactions');
               break;
             case 3:
-              context.goNamed('reports');
+              context.goNamed('accounts');
               break;
             case 4:
-              context.goNamed('settings');
+              context.goNamed('reports');
               break;
           }
         },
@@ -72,14 +78,14 @@ class MainScreen extends HookConsumerWidget {
             label: 'Transactions',
           ),
           NavigationDestination(
+            icon: Icon(Icons.account_balance_outlined),
+            selectedIcon: Icon(Icons.account_balance),
+            label: 'Accounts',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),
             selectedIcon: Icon(Icons.bar_chart),
             label: 'Reports',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
           ),
         ],
       ),
@@ -94,10 +100,10 @@ class MainScreen extends HookConsumerWidget {
     if (location.startsWith('/transactions')) {
       return 2;
     }
-    if (location.startsWith('/reports')) {
+    if (location.startsWith('/accounts')) {
       return 3;
     }
-    if (location.startsWith('/settings')) {
+    if (location.startsWith('/reports')) {
       return 4;
     }
     return 0;

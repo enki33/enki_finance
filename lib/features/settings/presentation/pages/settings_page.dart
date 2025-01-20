@@ -62,9 +62,7 @@ class SettingsPage extends ConsumerWidget {
             leading: const Icon(Icons.savings),
             title: const Text('Jarras'),
             subtitle: const Text('Administrar jarras de ahorro'),
-            onTap: () {
-              // TODO: Navigate to jars management
-            },
+            onTap: () => context.go('/settings/jars'),
           ),
           const Divider(),
 
