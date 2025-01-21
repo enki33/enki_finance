@@ -12,6 +12,7 @@ import '../../features/maintenance/presentation/pages/jars_page.dart';
 import '../../features/maintenance/presentation/pages/categories_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/account/presentation/pages/accounts_page.dart';
+import '../../features/settings/presentation/pages/theme_settings_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
@@ -115,10 +116,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
               GoRoute(
                 path: 'theme',
-                name: 'theme',
-                builder: (context, state) => const Center(
-                  child: Text('Theme Settings'),
-                ),
+                name: 'settings-theme',
+                builder: (context, state) => const ThemeSettingsPage(),
               ),
               GoRoute(
                 path: 'language',
