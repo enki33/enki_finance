@@ -219,12 +219,17 @@ final jarTotalPagesProvider = StateProvider<int>((ref) => 1);
 
 final transactionTypesProvider =
     FutureProvider<Map<String, String>>((ref) async {
-  final client = ref.watch(supabaseClientProvider);
-  final result = await client
-      .from('transaction_type')
-      .select('id, name')
-      .eq('is_active', true);
+  final supabase = ref.watch(supabaseClientProvider);
+  final response = await supabase.from('transaction_type').select();
+  return Map.fromEntries(
+    response.map<MapEntry<String, String>>(
+      (type) => MapEntry(type['name'] as String, type['id'] as String),
+    ),
+  );
+});
 
-  return Map.fromEntries((result as List)
-      .map((type) => MapEntry(type['name'] as String, type['id'] as String)));
+final accountsProvider = FutureProvider((ref) async {
+  final supabase = ref.watch(supabaseClientProvider);
+  final response = await supabase.from('account').select();
+  return response;
 });

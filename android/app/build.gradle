@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "lat.adastra.enki_finance"
+    namespace "lat.adastra.enki_finance"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 

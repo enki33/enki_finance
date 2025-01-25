@@ -76,6 +76,17 @@ class AccountRepositoryImpl implements AccountRepository {
   }
 
   @override
+  Future<bool> hasTransactions(String accountId) async {
+    try {
+      return await remoteDataSource.hasTransactions(accountId);
+    } catch (e) {
+      // If there's an error checking for transactions, assume there are some
+      // to prevent accidental deletion
+      return true;
+    }
+  }
+
+  @override
   Future<Either<Failure, CreditCardDetails>> getCreditCardDetails(
       String accountId) async {
     try {

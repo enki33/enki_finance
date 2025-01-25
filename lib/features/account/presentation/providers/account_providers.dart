@@ -8,6 +8,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:enki_finance/core/providers/supabase_provider.dart';
+import '../../domain/services/account_service.dart';
+import '../../domain/services/account_service_provider.dart';
 
 part 'account_providers.g.dart';
 
@@ -20,8 +22,7 @@ AccountRepository accountRepository(AccountRepositoryRef ref) {
 
 @riverpod
 Future<List<Account>> accounts(AccountsRef ref) async {
-  final repository = ref.watch(accountRepositoryProvider);
-  final result = await repository.getAccounts();
+  final result = await ref.watch(accountServiceProvider).getAccounts();
   return result.fold(
     (failure) => throw Exception(failure.message),
     (accounts) => accounts,
@@ -30,8 +31,7 @@ Future<List<Account>> accounts(AccountsRef ref) async {
 
 @riverpod
 Future<Account> account(AccountRef ref, String id) async {
-  final repository = ref.watch(accountRepositoryProvider);
-  final result = await repository.getAccountById(id);
+  final result = await ref.watch(accountServiceProvider).getAccountById(id);
   return result.fold(
     (failure) => throw Exception(failure.message),
     (account) => account,
@@ -41,8 +41,8 @@ Future<Account> account(AccountRef ref, String id) async {
 @riverpod
 Future<CreditCardDetails> creditCardDetails(
     CreditCardDetailsRef ref, String accountId) async {
-  final repository = ref.watch(accountRepositoryProvider);
-  final result = await repository.getCreditCardDetails(accountId);
+  final result =
+      await ref.watch(accountServiceProvider).getCreditCardDetails(accountId);
   return result.fold(
     (failure) => throw Exception(failure.message),
     (details) => details,
@@ -57,20 +57,23 @@ class AccountNotifier extends _$AccountNotifier {
   }
 
   Future<void> createAccount(Account account) async {
-    final repository = ref.read(accountRepositoryProvider);
-    final result = await repository.createAccount(account);
-    result.fold((failure) {
-      state = AsyncValue.error(failure.message, StackTrace.current);
-      throw Exception(failure.message);
-    }, (newAccount) {
-      final future = state.value ?? [];
-      state = AsyncValue.data([...future, newAccount]);
-    });
+    final result =
+        await ref.read(accountServiceProvider).createAccount(account);
+    result.fold(
+      (failure) {
+        state = AsyncValue.error(failure.message, StackTrace.current);
+        throw Exception(failure.message);
+      },
+      (newAccount) {
+        final future = state.value ?? [];
+        state = AsyncValue.data([...future, newAccount]);
+      },
+    );
   }
 
   Future<void> updateAccount(Account account) async {
-    final repository = ref.read(accountRepositoryProvider);
-    final result = await repository.updateAccount(account);
+    final result =
+        await ref.read(accountServiceProvider).updateAccount(account);
     result.fold(
       (failure) => throw Exception(failure.message),
       (updatedAccount) async {
@@ -85,8 +88,7 @@ class AccountNotifier extends _$AccountNotifier {
   }
 
   Future<void> deleteAccount(String id) async {
-    final repository = ref.read(accountRepositoryProvider);
-    final result = await repository.deleteAccount(id);
+    final result = await ref.read(accountServiceProvider).deleteAccount(id);
     result.fold(
       (failure) => throw Exception(failure.message),
       (_) async {
@@ -111,8 +113,8 @@ class CreditCardNotifier extends _$CreditCardNotifier {
   }
 
   Future<void> createCreditCardDetails(CreditCardDetails details) async {
-    final repository = ref.read(accountRepositoryProvider);
-    final result = await repository.createCreditCardDetails(details);
+    final result =
+        await ref.read(accountServiceProvider).createCreditCardDetails(details);
     result.fold(
       (failure) => throw Exception(failure.message),
       (newDetails) {
@@ -122,8 +124,8 @@ class CreditCardNotifier extends _$CreditCardNotifier {
   }
 
   Future<void> updateCreditCardDetails(CreditCardDetails details) async {
-    final repository = ref.read(accountRepositoryProvider);
-    final result = await repository.updateCreditCardDetails(details);
+    final result =
+        await ref.read(accountServiceProvider).updateCreditCardDetails(details);
     result.fold(
       (failure) => throw Exception(failure.message),
       (updatedDetails) {
@@ -133,11 +135,12 @@ class CreditCardNotifier extends _$CreditCardNotifier {
   }
 
   Future<void> deleteCreditCardDetails() async {
-    final repository = ref.read(accountRepositoryProvider);
     final currentDetails = state.value;
     if (currentDetails == null) return;
 
-    final result = await repository.deleteCreditCardDetails(currentDetails.id!);
+    final result = await ref
+        .read(accountServiceProvider)
+        .deleteCreditCardDetails(currentDetails.id!);
     result.fold(
       (failure) => throw Exception(failure.message),
       (_) {
@@ -149,7 +152,7 @@ class CreditCardNotifier extends _$CreditCardNotifier {
 
 @riverpod
 Future<Map<String, String>> accountTypes(AccountTypesRef ref) async {
-  final supabase = Supabase.instance.client;
+  final supabase = ref.watch(supabaseClientProvider);
   final response = await supabase
       .from('account_type')
       .select('id, name')
@@ -168,7 +171,7 @@ Future<Map<String, String>> accountTypes(AccountTypesRef ref) async {
 
 @riverpod
 Future<Map<String, String>> currencies(CurrenciesRef ref) async {
-  final supabase = Supabase.instance.client;
+  final supabase = ref.watch(supabaseClientProvider);
   final response = await supabase
       .from('currency')
       .select('id, name, code')

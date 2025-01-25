@@ -39,3 +39,13 @@ class NotFoundFailure extends Failure {
   const NotFoundFailure({required String message, String? code})
       : super(message: message, code: code);
 }
+
+class DatabaseFailure extends Failure {
+  const DatabaseFailure(String message)
+      : super(message: message, code: 'DATABASE_ERROR');
+}
+
+class UnexpectedFailure extends Failure {
+  const UnexpectedFailure(String message)
+      : super(message: message, code: 'UNEXPECTED_ERROR');
+}

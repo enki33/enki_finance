@@ -8,6 +8,7 @@ abstract class AccountRemoteDataSource {
   Future<AccountModel> createAccount(AccountModel account);
   Future<AccountModel> updateAccount(AccountModel account);
   Future<void> deleteAccount(String id);
+  Future<bool> hasTransactions(String accountId);
 
   Future<CreditCardDetailsModel> getCreditCardDetails(String accountId);
   Future<CreditCardDetailsModel> createCreditCardDetails(
@@ -67,6 +68,17 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
   @override
   Future<void> deleteAccount(String id) async {
     await supabase.from('account').delete().eq('id', id);
+  }
+
+  @override
+  Future<bool> hasTransactions(String accountId) async {
+    final response = await supabase
+        .from('transaction')
+        .select('id')
+        .eq('account_id', accountId)
+        .limit(1);
+
+    return (response as List).isNotEmpty;
   }
 
   @override

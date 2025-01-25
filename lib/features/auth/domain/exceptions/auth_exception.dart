@@ -52,6 +52,11 @@ class NetworkException extends AuthException {
       : super('No hay conexión a internet. Por favor intenta más tarde');
 }
 
+/// Thrown when input validation fails
+class InvalidInputException extends AuthException {
+  const InvalidInputException(String message) : super(message);
+}
+
 /// Thrown for any other authentication error
 class UnknownAuthException extends AuthException {
   const UnknownAuthException([String? message])

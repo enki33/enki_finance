@@ -5,6 +5,8 @@ import 'core/config/env_config.dart';
 import 'core/routing/app_router.dart';
 import 'core/utils/app_theme.dart';
 import 'core/providers/theme_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'core/providers/shared_preferences_provider.dart';
 
 Future<void> main() async {
   try {
@@ -15,11 +17,21 @@ Future<void> main() async {
 
     // Initialize Supabase
     await Supabase.initialize(
-      url: EnvConfig.supabaseUrl,
-      anonKey: EnvConfig.supabaseAnonKey,
+      url: await EnvConfig.supabaseUrl,
+      anonKey: await EnvConfig.supabaseAnonKey,
     );
 
-    runApp(const ProviderScope(child: App()));
+    // Initialize shared preferences
+    final prefs = await SharedPreferences.getInstance();
+
+    runApp(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+        child: const App(),
+      ),
+    );
   } catch (e) {
     debugPrint('Initialization error: $e');
     runApp(

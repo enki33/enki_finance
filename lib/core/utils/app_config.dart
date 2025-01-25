@@ -26,7 +26,7 @@ class AppConfig {
   static bool get enableExportToExcel => EnvConfig.enableExportToExcel;
 
   // App settings (retrieved from environment)
-  static int get defaultNotificationMinutes =>
+  static Future<int> get defaultNotificationMinutes =>
       EnvConfig.defaultNotificationMinutes;
 
   // Debug settings (not sensitive, can be hardcoded)
@@ -34,6 +34,6 @@ class AppConfig {
   static bool get enableLogging => kDebugMode;
 
   // Supabase configuration (retrieved from environment)
-  static String get supabaseUrl => EnvConfig.supabaseUrl;
-  static String get supabaseAnonKey => EnvConfig.supabaseAnonKey;
+  static Future<String> get supabaseUrl => EnvConfig.supabaseUrl;
+  static Future<String> get supabaseAnonKey => EnvConfig.supabaseAnonKey;
 }

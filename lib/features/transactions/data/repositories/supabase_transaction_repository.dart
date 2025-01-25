@@ -1,9 +1,11 @@
 import 'package:dartz/dartz.dart';
-import 'package:enki_finance/core/errors/failures.dart';
-import 'package:enki_finance/core/providers/supabase_provider.dart';
-import 'package:enki_finance/features/transactions/domain/entities/transaction.dart';
-import 'package:enki_finance/features/transactions/domain/repositories/transaction_repository.dart';
+import '../../../../core/error/failures.dart';
+import '../../domain/entities/transaction.dart';
+import '../../domain/entities/daily_total.dart';
+import '../../domain/repositories/transaction_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
+import '../../presentation/providers/transaction_filter_provider.dart';
 
 class SupabaseTransactionRepository implements TransactionRepository {
   final SupabaseClient supabase;
@@ -14,11 +16,16 @@ class SupabaseTransactionRepository implements TransactionRepository {
   Future<Either<Failure, Transaction>> createTransaction(
       Transaction transaction) async {
     try {
+      debugPrint('Creating transaction...');
+      debugPrint(
+          'Transaction date: ${transaction.transactionDate.toUtc().toIso8601String()}');
+
       final response = await supabase
           .from('transaction')
           .insert({
             'user_id': transaction.userId,
-            'transaction_date': transaction.transactionDate.toIso8601String(),
+            'transaction_date':
+                transaction.transactionDate.toUtc().toIso8601String(),
             'description': transaction.description,
             'amount': transaction.amount,
             'transaction_type_id': transaction.transactionTypeId,
@@ -37,51 +44,71 @@ class SupabaseTransactionRepository implements TransactionRepository {
           .select()
           .single();
 
+      debugPrint('Transaction created successfully');
       return Right(Transaction.fromJson(response));
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      debugPrint('Error creating transaction: $e');
+      if (e.toString().contains('foreign key constraint')) {
+        return Left(ValidationFailure(
+            message: 'Invalid reference: One or more IDs do not exist'));
+      }
+      if (e.toString().contains('duplicate key')) {
+        return Left(ValidationFailure(message: 'Transaction already exists'));
+      }
+      if (e.toString().contains('permission denied')) {
+        return Left(UnauthorizedFailure(message: 'Permission denied'));
+      }
+      return Left(ServerFailure(message: e.toString()));
     }
   }
 
   @override
   Future<Either<Failure, List<Transaction>>> getTransactions({
     required String userId,
-    DateTime? startDate,
-    DateTime? endDate,
-    String? transactionType,
-    String? categoryId,
-    String? accountId,
-    String? jarId,
+    TransactionFilter? filter,
   }) async {
     try {
-      var query = supabase.from('transaction').select().eq('user_id', userId);
+      final startDate = (filter?.startDate ?? DateTime(2000)).toUtc();
+      final endDate = (filter?.endDate ?? DateTime.now()).toUtc();
 
-      if (startDate != null) {
-        query = query.gte('transaction_date', startDate.toIso8601String());
-      }
-      if (endDate != null) {
-        query = query.lte('transaction_date', endDate.toIso8601String());
-      }
-      if (transactionType != null) {
-        query = query.eq('transaction_type_id', transactionType);
-      }
-      if (categoryId != null) {
-        query = query.eq('category_id', categoryId);
-      }
-      if (accountId != null) {
-        query = query.eq('account_id', accountId);
-      }
-      if (jarId != null) {
-        query = query.eq('jar_id', jarId);
-      }
+      debugPrint('\nDate Parameters (UTC):');
+      debugPrint('Start Date: ${startDate.toIso8601String()}');
+      debugPrint('End Date: ${endDate.toIso8601String()}');
 
-      final response = await query.order('transaction_date', ascending: false);
+      final params = {
+        'p_user_id': userId,
+        'p_start_date': startDate.toIso8601String(),
+        'p_end_date': endDate.toIso8601String(),
+        'p_account_id': filter?.accountId,
+        'p_category_id': filter?.categoryId,
+        'p_subcategory_id': filter?.subcategoryId,
+        'p_transaction_type_id': filter?.transactionTypeId,
+        'p_jar_id': filter?.jarId,
+      };
 
-      return Right(
-        response.map((json) => Transaction.fromJson(json)).toList(),
+      debugPrint('\nRPC Parameters:');
+      debugPrint('Calling get_transactions_by_date_range with params:');
+      params.forEach((key, value) => debugPrint('  $key: $value'));
+
+      final response = await supabase.rpc(
+        'get_transactions_by_date_range',
+        params: params,
       );
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
+
+      return Right((response as List)
+          .map<Transaction>((json) => Transaction.fromJson(json))
+          .toList());
+    } catch (e, stackTrace) {
+      debugPrint('\n=== Error in getTransactions ===');
+      debugPrint('Error Type: ${e.runtimeType}');
+      debugPrint('Error Message: $e');
+      debugPrint('Stack Trace:\n$stackTrace');
+      debugPrint('=== End Error Info ===\n');
+
+      if (e.toString().contains('permission denied')) {
+        return Left(UnauthorizedFailure(message: 'Permission denied'));
+      }
+      return Left(ServerFailure(message: e.toString()));
     }
   }
 
@@ -92,7 +119,8 @@ class SupabaseTransactionRepository implements TransactionRepository {
       final response = await supabase
           .from('transaction')
           .update({
-            'transaction_date': transaction.transactionDate.toIso8601String(),
+            'transaction_date':
+                transaction.transactionDate.toUtc().toIso8601String(),
             'description': transaction.description,
             'amount': transaction.amount,
             'transaction_type_id': transaction.transactionTypeId,
@@ -105,7 +133,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
             'exchange_rate': transaction.exchangeRate,
             'notes': transaction.notes,
             'tags': transaction.tags,
-            'modified_at': DateTime.now().toIso8601String(),
+            'modified_at': DateTime.now().toUtc().toIso8601String(),
           })
           .eq('id', transaction.id)
           .select()
@@ -113,7 +141,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
 
       return Right(Transaction.fromJson(response));
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return Left(ServerFailure(message: e.toString()));
     }
   }
 
@@ -123,7 +151,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
       await supabase.from('transaction').delete().eq('id', transactionId);
       return const Right(unit);
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return Left(ServerFailure(message: e.toString()));
     }
   }
 
@@ -134,18 +162,81 @@ class SupabaseTransactionRepository implements TransactionRepository {
     required DateTime endDate,
   }) async {
     try {
+      final utcStartDate = startDate.toUtc();
+      final utcEndDate = endDate.toUtc();
+
+      debugPrint('\nTransaction Summary Date Parameters (UTC):');
+      debugPrint('Start Date: ${utcStartDate.toIso8601String()}');
+      debugPrint('End Date: ${utcEndDate.toIso8601String()}');
+
       final response = await supabase.rpc(
-        'get_transaction_summary',
+        'get_transaction_summary_by_date_range',
         params: {
           'p_user_id': userId,
-          'p_start_date': startDate.toIso8601String(),
-          'p_end_date': endDate.toIso8601String(),
+          'p_start_date': utcStartDate.toIso8601String(),
+          'p_end_date': utcEndDate.toIso8601String(),
         },
       );
 
-      return Right(Map<String, double>.from(response));
+      final summary = <String, double>{};
+      for (final row in response as List) {
+        summary[row['transaction_type'] as String] =
+            (row['total_amount'] as num).toDouble();
+      }
+
+      return Right(summary);
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  Future<Either<Failure, List<DailyTotal>>> getDailyTotals({
+    required String userId,
+    required DateTime startDate,
+    required DateTime endDate,
+    String? transactionTypeId,
+  }) async {
+    try {
+      final utcStartDate = startDate.toUtc();
+      final utcEndDate = endDate.toUtc();
+
+      debugPrint('\nDaily Totals Date Parameters (UTC):');
+      debugPrint('Start Date: ${utcStartDate.toIso8601String()}');
+      debugPrint('End Date: ${utcEndDate.toIso8601String()}');
+
+      final response = await supabase.rpc(
+        'get_daily_transaction_totals',
+        params: {
+          'p_user_id': userId,
+          'p_start_date': utcStartDate.toIso8601String(),
+          'p_end_date': utcEndDate.toIso8601String(),
+          'p_transaction_type_id': transactionTypeId,
+        },
+      );
+
+      if (response is List && response.isNotEmpty) {
+        debugPrint('\nFirst Row Date Analysis:');
+        debugPrint('Raw date: ${response[0]['transaction_date']}');
+        debugPrint('Type: ${response[0]['transaction_date'].runtimeType}');
+      }
+
+      final totals = (response as List).map<DailyTotal>((json) {
+        final rawDate = json['transaction_date'] as String;
+        final date = DateTime.parse(rawDate).toUtc();
+        return DailyTotal(
+          date: date,
+          amount: (json['total_amount'] as num).toDouble(),
+          count: json['transaction_count'] as int,
+        );
+      }).toList();
+
+      return Right(totals);
+    } catch (e, stackTrace) {
+      debugPrint('\n=== Error in getDailyTotals ===');
+      debugPrint('Error Type: ${e.runtimeType}');
+      debugPrint('Error Message: $e');
+      debugPrint('Stack Trace:\n$stackTrace');
+      return Left(ServerFailure(message: e.toString()));
     }
   }
 }

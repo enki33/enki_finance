@@ -10,6 +10,9 @@ abstract class AccountRepository {
   Future<Either<Failure, Account>> updateAccount(Account account);
   Future<Either<Failure, void>> deleteAccount(String id);
 
+  /// Check if an account has any transactions
+  Future<bool> hasTransactions(String accountId);
+
   // Credit card specific operations
   Future<Either<Failure, CreditCardDetails>> getCreditCardDetails(
       String accountId);

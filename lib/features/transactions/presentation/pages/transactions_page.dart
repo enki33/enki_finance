@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/transaction_list.dart';
 import '../widgets/transaction_form.dart';
+import '../widgets/transaction_filter.dart' as widgets;
+import '../providers/transaction_filter_provider.dart';
 
 class TransactionsPage extends ConsumerWidget {
   final String userId;
@@ -13,17 +15,42 @@ class TransactionsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final filter = ref.watch(transactionFilterProvider);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Transactions'),
+        title: const Text('Transacciones'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: Stack(
+              children: [
+                const Icon(Icons.filter_list),
+                if (filter.hasFilters)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 8,
+                        minHeight: 8,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             onPressed: () => _showFilterOptions(context),
           ),
         ],
       ),
-      body: TransactionList(userId: userId),
+      body: TransactionList(
+        userId: userId,
+        filter: filter,
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCreateForm(context),
         child: const Icon(Icons.add),
@@ -46,28 +73,10 @@ class TransactionsPage extends ConsumerWidget {
   }
 
   void _showFilterOptions(BuildContext context) {
-    // TODO: Implement filter options
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Filtros',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            // TODO: Add filter options
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Aplicar'),
-            ),
-          ],
-        ),
-      ),
+      isScrollControlled: true,
+      builder: (context) => const widgets.TransactionFilter(),
     );
   }
 }

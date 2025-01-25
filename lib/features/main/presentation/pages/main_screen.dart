@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import '../../../auth/auth.dart';
+import '../../domain/services/main_service_provider.dart';
+import '../../domain/exceptions/main_exception.dart';
 
 class MainScreen extends HookConsumerWidget {
   const MainScreen({super.key, required this.child});
@@ -11,25 +14,66 @@ class MainScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
+    final isInitializing = useState(true);
+    final hasError = useState(false);
+
+    // Initialize and validate app state
+    useEffect(() {
+      Future<void> initializeApp() async {
+        try {
+          isInitializing.value = true;
+          hasError.value = false;
+          final mainService = ref.read(mainServiceProvider);
+          await mainService.initialize();
+          await mainService.validateAppState();
+        } catch (error) {
+          hasError.value = true;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error.toString()),
+              backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: 'Retry',
+                textColor: Colors.white,
+                onPressed: initializeApp,
+              ),
+            ),
+          );
+        } finally {
+          isInitializing.value = false;
+        }
+      }
+
+      initializeApp();
+      return null;
+    }, []);
+
+    if (isInitializing.value) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: authState.when(
           data: (user) => Text(
-            user != null ? 'Bienvenido, ${user.firstName}' : 'Enki Finance',
+            user != null ? 'Welcome, ${user.firstName}' : 'Enki Finance',
           ),
-          loading: () => const Text('Cargando...'),
+          loading: () => const Text('Loading...'),
           error: (_, __) => const Text('Enki Finance'),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            tooltip: 'Mantenimiento',
+            tooltip: 'Maintenance',
             onPressed: () => context.go('/settings/maintenance'),
           ),
           IconButton(
             icon: const Icon(Icons.logout),
-            tooltip: 'Cerrar sesión',
+            tooltip: 'Sign out',
             onPressed: () async {
               await ref.read(authProvider.notifier).signOut();
               if (context.mounted) {
@@ -39,7 +83,28 @@ class MainScreen extends HookConsumerWidget {
           ),
         ],
       ),
-      body: child,
+      body: hasError.value
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Failed to initialize app',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      isInitializing.value = true;
+                      hasError.value = false;
+                      ref.invalidate(mainServiceProvider);
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : child,
       bottomNavigationBar: NavigationBar(
         onDestinationSelected: (index) {
           switch (index) {

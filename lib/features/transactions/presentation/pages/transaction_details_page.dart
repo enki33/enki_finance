@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:enki_finance/features/transactions/domain/entities/transaction.dart';
 import 'package:enki_finance/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:enki_finance/features/transactions/presentation/widgets/transaction_form.dart';
+import 'package:enki_finance/features/maintenance/presentation/providers/maintenance_providers.dart';
+import 'package:enki_finance/features/maintenance/domain/entities/category.dart';
+import 'package:enki_finance/features/maintenance/domain/entities/subcategory.dart';
 import 'package:intl/intl.dart';
 
 class TransactionDetailsPage extends ConsumerWidget {
@@ -19,6 +22,13 @@ class TransactionDetailsPage extends ConsumerWidget {
       locale: 'es_MX',
       symbol: '\$',
     );
+
+    final transactionTypesAsync = ref.watch(transactionTypesProvider);
+    final categoriesAsync = ref.watch(categoriesProvider);
+    final subcategoriesAsync =
+        ref.watch(subcategoriesProvider(transaction.categoryId));
+    final jarsAsync = ref.watch(jarsProvider);
+    final accountsAsync = ref.watch(accountsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -52,11 +62,18 @@ class TransactionDetailsPage extends ConsumerWidget {
                         ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    transaction.transactionTypeId == 'EXPENSE'
-                        ? 'Gasto'
-                        : 'Ingreso',
-                    style: Theme.of(context).textTheme.titleMedium,
+                  transactionTypesAsync.when(
+                    data: (types) => Text(
+                      types.entries
+                          .firstWhere(
+                            (e) => e.value == transaction.transactionTypeId,
+                            orElse: () => const MapEntry('', ''),
+                          )
+                          .key,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    loading: () => const CircularProgressIndicator(),
+                    error: (error, stack) => Text('Error: $error'),
                   ),
                 ],
               ),
@@ -92,37 +109,80 @@ class TransactionDetailsPage extends ConsumerWidget {
                     ),
                   ],
                   const Divider(),
-                  _buildDetailRow(
-                    context,
-                    'Cuenta',
-                    'TODO: Load account name', // TODO: Load account name
+                  accountsAsync.when(
+                    data: (accounts) => _buildDetailRow(
+                      context,
+                      'Cuenta',
+                      accounts.firstWhere(
+                        (a) => a['id'] == transaction.accountId,
+                        orElse: () => {'name': 'No encontrada'},
+                      )['name'] as String,
+                    ),
+                    loading: () => const CircularProgressIndicator(),
+                    error: (error, stack) => Text('Error: $error'),
                   ),
                   if (transaction.transactionTypeId == 'EXPENSE') ...[
                     const Divider(),
-                    _buildDetailRow(
-                      context,
-                      'Jarra',
-                      'TODO: Load jar name', // TODO: Load jar name
+                    jarsAsync.when(
+                      data: (jars) => _buildDetailRow(
+                        context,
+                        'Jarra',
+                        jars.firstWhere(
+                          (j) => j['id'] == transaction.jarId,
+                          orElse: () => {'name': 'No encontrada'},
+                        )['name'] as String,
+                      ),
+                      loading: () => const CircularProgressIndicator(),
+                      error: (error, stack) => Text('Error: $error'),
                     ),
                   ],
                   const Divider(),
-                  _buildDetailRow(
-                    context,
-                    'Categoría',
-                    'TODO: Load category name', // TODO: Load category name
+                  categoriesAsync.when(
+                    data: (categories) => _buildDetailRow(
+                      context,
+                      'Categoría',
+                      categories
+                          .firstWhere(
+                            (c) => c.id == transaction.categoryId,
+                            orElse: () => Category(
+                              id: '',
+                              name: 'No encontrada',
+                              transactionTypeId: '',
+                              createdAt: DateTime.now(),
+                            ),
+                          )
+                          .name,
+                    ),
+                    loading: () => const CircularProgressIndicator(),
+                    error: (error, stack) => Text('Error: $error'),
                   ),
                   const Divider(),
-                  _buildDetailRow(
-                    context,
-                    'Subcategoría',
-                    'TODO: Load subcategory name', // TODO: Load subcategory name
+                  subcategoriesAsync.when(
+                    data: (subcategories) => _buildDetailRow(
+                      context,
+                      'Subcategoría',
+                      subcategories
+                          .firstWhere(
+                            (s) => s.id == transaction.subcategoryId,
+                            orElse: () => Subcategory(
+                              id: '',
+                              name: 'No encontrada',
+                              categoryId: '',
+                              jarId: null,
+                              createdAt: DateTime.now(),
+                            ),
+                          )
+                          .name,
+                    ),
+                    loading: () => const CircularProgressIndicator(),
+                    error: (error, stack) => Text('Error: $error'),
                   ),
                   if (transaction.transactionMediumId != null) ...[
                     const Divider(),
                     _buildDetailRow(
                       context,
                       'Medio de Pago',
-                      'TODO: Load medium name', // TODO: Load medium name
+                      'TODO: Load medium name', // TODO: Add transaction mediums provider
                     ),
                   ],
                 ],

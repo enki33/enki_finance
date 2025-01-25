@@ -7,12 +7,14 @@ import '../../features/main/main_feature_barrel.dart';
 import '../providers/supabase_provider.dart';
 import '../../features/auth/data/repositories/auth_repository_provider.dart';
 import '../../features/transactions/presentation/pages/transactions_page.dart';
+import '../../features/transactions/domain/entities/transaction.dart';
 import '../../features/maintenance/presentation/pages/maintenance_page.dart';
 import '../../features/maintenance/presentation/pages/jars_page.dart';
 import '../../features/maintenance/presentation/pages/categories_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/account/presentation/pages/accounts_page.dart';
 import '../../features/settings/presentation/pages/theme_settings_page.dart';
+import '../../features/transactions/presentation/pages/transaction_details_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
@@ -69,6 +71,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => TransactionsPage(
               userId: ref.read(authRepositoryProvider).currentUser?.id ?? '',
             ),
+            routes: [
+              GoRoute(
+                path: 'details',
+                name: 'transaction-details',
+                builder: (context, state) => TransactionDetailsPage(
+                  transaction: state.extra as Transaction,
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: '/reports',
