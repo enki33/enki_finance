@@ -9,6 +9,8 @@ import '../../domain/entities/auth_user.dart';
 import '../providers/auth_provider.dart';
 import '../../../settings/data/repositories/currency_repository_provider.dart';
 import '../../data/repositories/auth_repository_provider.dart';
+import 'package:enki_finance/core/providers/validator_providers.dart';
+import 'package:enki_finance/features/auth/domain/validators/auth_form_validator.dart';
 
 class UserInfoPage extends HookConsumerWidget {
   const UserInfoPage({super.key});
@@ -16,13 +18,14 @@ class UserInfoPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
+    final validator = ref.watch(authFormValidatorProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Información de Usuario'),
       ),
       body: authState.when(
-        data: (user) => _UserInfoContent(user: user),
+        data: (user) => _UserInfoContent(user: user, validator: validator),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
           child: Text('Error: $error'),
@@ -33,9 +36,10 @@ class UserInfoPage extends HookConsumerWidget {
 }
 
 class _UserInfoContent extends HookConsumerWidget {
-  const _UserInfoContent({required this.user});
+  const _UserInfoContent({required this.user, required this.validator});
 
   final AuthUser? user;
+  final AuthFormValidator validator;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -153,6 +157,10 @@ class _UserInfoContent extends HookConsumerWidget {
                 labelText: 'Email',
                 border: OutlineInputBorder(),
               ),
+              validator: (value) => validator.validateEmail(value).fold(
+                    (failure) => failure.message,
+                    (_) => null,
+                  ),
             ),
             const SizedBox(height: 16),
             TextFormField(

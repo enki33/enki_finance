@@ -25,7 +25,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
         exportToExcelEnabled: settingsModel.exportToExcelEnabled,
       ));
     } on PostgrestException catch (e) {
-      return Left(DatabaseFailure(e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
       return Left(UnexpectedFailure(e.toString()));
     }
@@ -49,7 +49,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
         exportToExcelEnabled: updatedModel.exportToExcelEnabled,
       ));
     } on PostgrestException catch (e) {
-      return Left(DatabaseFailure(e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
       return Left(UnexpectedFailure(e.toString()));
     }
@@ -61,7 +61,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
       await _remoteDataSource.initializeSystemData();
       return const Right(null);
     } on PostgrestException catch (e) {
-      return Left(DatabaseFailure(e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
       return Left(UnexpectedFailure(e.toString()));
     }
@@ -73,7 +73,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
       final isInitialized = await _remoteDataSource.isSystemInitialized();
       return Right(isInitialized);
     } on PostgrestException catch (e) {
-      return Left(DatabaseFailure(e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
       return Left(UnexpectedFailure(e.toString()));
     }

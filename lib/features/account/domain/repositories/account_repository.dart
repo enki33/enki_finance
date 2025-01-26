@@ -1,4 +1,4 @@
-import 'package:dartz/dartz.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:enki_finance/core/error/failures.dart';
 import 'package:enki_finance/features/account/domain/entities/account.dart';
 import 'package:enki_finance/features/account/domain/entities/credit_card_details.dart';

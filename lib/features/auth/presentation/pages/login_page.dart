@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:enki_finance/core/providers/validator_providers.dart';
 import '../providers/auth_provider.dart';
 import '../../domain/exceptions/auth_exception.dart';
 
-class LoginPage extends HookConsumerWidget {
+class LoginPage extends ConsumerWidget {
   const LoginPage({super.key});
 
   @override
@@ -17,6 +18,7 @@ class LoginPage extends HookConsumerWidget {
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final isLoading = useState(false);
     final errorMessage = useState<String?>(null);
+    final validator = ref.watch(authFormValidatorProvider);
 
     void handleSubmit() async {
       if (!(formKey.currentState?.validate() ?? false)) return;
@@ -104,16 +106,10 @@ class LoginPage extends HookConsumerWidget {
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
                     keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                          .hasMatch(value)) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
+                    validator: (value) => validator.validateEmail(value).fold(
+                          (failure) => failure.message,
+                          (_) => null,
+                        ),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -123,15 +119,11 @@ class LoginPage extends HookConsumerWidget {
                       prefixIcon: Icon(Icons.lock_outline),
                     ),
                     obscureText: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
+                    validator: (value) =>
+                        validator.validatePassword(value).fold(
+                              (failure) => failure.message,
+                              (_) => null,
+                            ),
                   ),
                   const SizedBox(height: 24),
                   if (errorMessage.value != null)

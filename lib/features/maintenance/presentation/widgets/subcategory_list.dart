@@ -7,191 +7,102 @@ import 'package:enki_finance/features/maintenance/presentation/widgets/subcatego
 import 'package:enki_finance/features/maintenance/presentation/widgets/pagination_controls.dart';
 
 class SubcategoryList extends ConsumerWidget {
-  const SubcategoryList({super.key});
+  final String categoryId;
+
+  const SubcategoryList({
+    super.key,
+    required this.categoryId,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedCategory = ref.watch(selectedCategoryProvider);
-    final subcategoriesAsync =
-        ref.watch(subcategoriesProvider(selectedCategory?.id));
+    final subcategoriesAsync = ref.watch(subcategoriesProvider(categoryId));
     final showActiveItems = ref.watch(showActiveSubcategoriesProvider);
-    final categoriesAsync = ref.watch(categoriesProvider);
 
     return Scaffold(
-      floatingActionButton: selectedCategory == null
-          ? null
-          : FloatingActionButton(
-              onPressed: () => _showAddDialog(context, ref, selectedCategory),
-              child: const Icon(Icons.add),
-            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showAddDialog(context, ref),
+        child: const Icon(Icons.add),
+      ),
       body: Column(
         children: [
-          // Category selector and active/inactive filter
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(8.0),
             child: Row(
               children: [
-                Expanded(
-                  child: categoriesAsync.when(
-                    data: (categories) {
-                      if (categories.isEmpty) {
-                        return const Center(
-                          child: Text('No hay categorías disponibles'),
-                        );
-                      }
-                      return DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: 'Seleccionar Categoría',
-                          border: OutlineInputBorder(),
-                        ),
-                        value: selectedCategory?.id,
-                        items: categories.map((category) {
-                          return DropdownMenuItem(
-                            value: category.id,
-                            child: Text(category.name),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            final category =
-                                categories.firstWhere((c) => c.id == value);
-                            ref.read(selectedCategoryProvider.notifier).state =
-                                category;
-                          }
-                        },
-                      );
-                    },
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (error, stack) => Center(
-                      child: Text('Error: ${error.toString()}'),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('Mostrar activos'),
-                    Switch(
-                      value: showActiveItems,
-                      onChanged: (value) {
-                        ref
-                            .read(showActiveSubcategoriesProvider.notifier)
-                            .state = value;
-                      },
-                    ),
-                  ],
+                const Text('Mostrar activos:'),
+                const SizedBox(width: 8),
+                Switch(
+                  value: showActiveItems,
+                  onChanged: (value) {
+                    ref.read(showActiveSubcategoriesProvider.notifier).state =
+                        value;
+                  },
                 ),
               ],
             ),
           ),
-          if (selectedCategory == null)
-            const Expanded(
-              child: Center(
-                child:
-                    Text('Selecciona una categoría para ver sus subcategorías'),
-              ),
-            )
-          else ...[
-            // Search bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Buscar subcategorías',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (value) {
-                  ref.read(subcategorySearchQueryProvider.notifier).state =
-                      value;
-                  ref.read(subcategoryPageProvider.notifier).state = 1;
+          Expanded(
+            child: subcategoriesAsync.when(
+              data: (subcategories) => ListView.builder(
+                itemCount: subcategories.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == subcategories.length) {
+                    return const SizedBox(height: 80);
+                  }
+                  final subcategory = subcategories[index];
+                  return ListTile(
+                    title: Text(subcategory.name),
+                    subtitle: Text(subcategory.description ?? ''),
+                    trailing: PopupMenuButton(
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Text('Editar'),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Text('Eliminar'),
+                        ),
+                      ],
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _showEditDialog(context, ref, subcategory);
+                        } else if (value == 'delete') {
+                          _showDeleteDialog(context, ref, subcategory);
+                        }
+                      },
+                    ),
+                  );
                 },
               ),
-            ),
-            const SizedBox(height: 16),
-            // List of subcategories
-            Expanded(
-              child: subcategoriesAsync.when(
-                data: (subcategories) => subcategories.isEmpty
-                    ? const Center(
-                        child: Text('No hay subcategorías disponibles'),
-                      )
-                    : ListView.builder(
-                        itemCount: subcategories.length +
-                            1, // Add one for bottom padding
-                        itemBuilder: (context, index) {
-                          if (index == subcategories.length) {
-                            return const SizedBox(height: 80); // Bottom padding
-                          }
-                          final subcategory = subcategories[index];
-                          return ListTile(
-                            title: Text(subcategory.name),
-                            subtitle: subcategory.description != null
-                                ? Text(subcategory.description!)
-                                : null,
-                            trailing: PopupMenuButton(
-                              itemBuilder: (context) => [
-                                const PopupMenuItem(
-                                  value: 'edit',
-                                  child: Text('Editar'),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'delete',
-                                  child: Text('Eliminar'),
-                                ),
-                              ],
-                              onSelected: (value) {
-                                if (value == 'edit') {
-                                  _showEditDialog(context, ref, subcategory);
-                                } else if (value == 'delete') {
-                                  _showDeleteDialog(context, ref, subcategory);
-                                }
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => Center(
-                  child: Text('Error: ${error.toString()}'),
-                ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stack) => Center(
+                child: Text('Error: ${error.toString()}'),
               ),
             ),
-            // Pagination controls
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: PaginationControls(
-                pageProvider: subcategoryPageProvider,
-                totalPagesProvider: subcategoryTotalPagesProvider,
-              ),
-            ),
-          ],
+          ),
         ],
       ),
     );
   }
 
-  void _showAddDialog(
-      BuildContext context, WidgetRef ref, Category category) async {
+  void _showAddDialog(BuildContext context, WidgetRef ref) async {
     final subcategory = await showDialog<Subcategory>(
       context: context,
-      builder: (context) => SubcategoryFormDialog(
-        categoryId: category.id!,
-      ),
+      builder: (context) => SubcategoryFormDialog(categoryId: categoryId),
     );
 
     if (subcategory != null) {
       ref.read(isSavingProvider.notifier).state = true;
       try {
-        final repository = ref.read(maintenanceRepositoryProvider);
-        final result = await repository.createSubcategory(subcategory);
+        final service = ref.read(subcategoryServiceProvider);
+        final result = await service.createSubcategory(subcategory);
         result.fold(
           (failure) => ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error: ${failure.message}')),
           ),
-          (_) => ref.refresh(subcategoriesProvider(category.id)),
+          (_) => ref.refresh(subcategoriesProvider(categoryId)),
         );
       } finally {
         ref.read(isSavingProvider.notifier).state = false;
@@ -201,12 +112,10 @@ class SubcategoryList extends ConsumerWidget {
 
   void _showEditDialog(
       BuildContext context, WidgetRef ref, Subcategory subcategory) async {
-    if (subcategory.categoryId == null) return;
-
     final updatedSubcategory = await showDialog<Subcategory>(
       context: context,
       builder: (context) => SubcategoryFormDialog(
-        categoryId: subcategory.categoryId!,
+        categoryId: categoryId,
         subcategory: subcategory,
       ),
     );
@@ -214,13 +123,13 @@ class SubcategoryList extends ConsumerWidget {
     if (updatedSubcategory != null) {
       ref.read(isSavingProvider.notifier).state = true;
       try {
-        final repository = ref.read(maintenanceRepositoryProvider);
-        final result = await repository.updateSubcategory(updatedSubcategory);
+        final service = ref.read(subcategoryServiceProvider);
+        final result = await service.updateSubcategory(updatedSubcategory);
         result.fold(
           (failure) => ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error: ${failure.message}')),
           ),
-          (_) => ref.refresh(subcategoriesProvider(subcategory.categoryId)),
+          (_) => ref.refresh(subcategoriesProvider(categoryId)),
         );
       } finally {
         ref.read(isSavingProvider.notifier).state = false;
@@ -230,9 +139,6 @@ class SubcategoryList extends ConsumerWidget {
 
   void _showDeleteDialog(
       BuildContext context, WidgetRef ref, Subcategory subcategory) async {
-    final selectedCategory = ref.read(selectedCategoryProvider);
-    if (selectedCategory == null || subcategory.id == null) return;
-
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -259,13 +165,13 @@ class SubcategoryList extends ConsumerWidget {
     if (confirmed == true) {
       ref.read(isDeletingProvider.notifier).state = true;
       try {
-        final repository = ref.read(maintenanceRepositoryProvider);
-        final result = await repository.deleteSubcategory(subcategory.id!);
+        final service = ref.read(subcategoryServiceProvider);
+        final result = await service.deleteSubcategory(subcategory.id ?? '');
         result.fold(
           (failure) => ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error: ${failure.message}')),
           ),
-          (_) => ref.refresh(subcategoriesProvider(selectedCategory.id)),
+          (_) => ref.refresh(subcategoriesProvider(categoryId)),
         );
       } finally {
         ref.read(isDeletingProvider.notifier).state = false;

@@ -23,8 +23,8 @@ class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
-  String? _selectedJarId;
   late bool _isActive;
+  String? _selectedJarId;
 
   @override
   void initState() {
@@ -33,8 +33,8 @@ class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
     _descriptionController = TextEditingController(
       text: widget.subcategory?.description,
     );
-    _selectedJarId = widget.subcategory?.jarId;
     _isActive = widget.subcategory?.isActive ?? true;
+    _selectedJarId = widget.subcategory?.jarId;
   }
 
   @override
@@ -48,9 +48,8 @@ class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
   Widget build(BuildContext context) {
     final isEditing = widget.subcategory != null;
     final isSaving = ref.watch(isSavingProvider);
+    final validator = ref.watch(subcategoryFormValidatorProvider);
     final jarsAsync = ref.watch(jarsProvider);
-    final subcategoriesAsync =
-        ref.watch(subcategoriesProvider(widget.categoryId));
 
     return AlertDialog(
       title: Text(isEditing ? 'Editar Subcategoría' : 'Nueva Subcategoría'),
@@ -67,12 +66,10 @@ class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
                   labelText: 'Nombre',
                   hintText: 'Ingresa el nombre de la subcategoría',
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'El nombre es requerido';
-                  }
-                  return null;
-                },
+                validator: (value) => validator.validateName(value).fold(
+                      (failure) => failure.message,
+                      (_) => null,
+                    ),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -90,14 +87,20 @@ class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
                   value: _selectedJarId,
                   decoration: const InputDecoration(
                     labelText: 'Jar',
-                    hintText: 'Selecciona el jar asociado',
+                    hintText: 'Selecciona un jar (opcional)',
                   ),
-                  items: jars.map((jar) {
-                    return DropdownMenuItem(
-                      value: jar['id'] as String,
-                      child: Text(jar['name'] as String),
-                    );
-                  }).toList(),
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('Ninguno'),
+                    ),
+                    ...jars.map(
+                      (jar) => DropdownMenuItem<String>(
+                        value: jar['id'] as String,
+                        child: Text(jar['name'] as String),
+                      ),
+                    ),
+                  ],
                   onChanged: isSaving
                       ? null
                       : (value) {
@@ -105,12 +108,6 @@ class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
                             _selectedJarId = value;
                           });
                         },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'El jar es requerido';
-                    }
-                    return null;
-                  },
                 ),
                 loading: () => const CircularProgressIndicator(),
                 error: (error, stack) => Text('Error: $error'),
@@ -119,7 +116,7 @@ class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    const Text('Activo'),
+                    const Text('Activo:'),
                     const SizedBox(width: 8),
                     Switch(
                       value: _isActive,
@@ -140,20 +137,16 @@ class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: isSaving ? null : () => Navigator.of(context).pop(),
+          onPressed: isSaving
+              ? null
+              : () {
+                  Navigator.of(context).pop();
+                },
           child: const Text('Cancelar'),
         ),
         ElevatedButton(
           onPressed: isSaving ? null : _submit,
-          child: isSaving
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                  ),
-                )
-              : Text(isEditing ? 'Guardar' : 'Crear'),
+          child: Text(isEditing ? 'Guardar' : 'Crear'),
         ),
       ],
     );
@@ -163,11 +156,11 @@ class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
     if (_formKey.currentState!.validate()) {
       final subcategory = Subcategory(
         id: widget.subcategory?.id,
+        categoryId: widget.categoryId,
         name: _nameController.text,
         description: _descriptionController.text.isEmpty
             ? null
             : _descriptionController.text,
-        categoryId: widget.categoryId,
         jarId: _selectedJarId,
         isActive: _isActive,
         createdAt: widget.subcategory?.createdAt ?? DateTime.now(),

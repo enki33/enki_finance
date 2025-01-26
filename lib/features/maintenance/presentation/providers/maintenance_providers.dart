@@ -5,14 +5,68 @@ import 'package:enki_finance/features/maintenance/data/repositories/supabase_mai
 import 'package:enki_finance/features/maintenance/domain/entities/category.dart';
 import 'package:enki_finance/features/maintenance/domain/entities/subcategory.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/providers/supabase_provider.dart';
+import '../../data/repositories/supabase_maintenance_repository.dart';
+import '../../domain/entities/category.dart';
+import '../../domain/entities/subcategory.dart';
+import '../../domain/services/category_service.dart';
+import '../../domain/services/subcategory_service.dart';
+import '../../domain/validators/category_form_validator.dart';
+import '../../domain/validators/subcategory_form_validator.dart';
+import '../../domain/usecases/create_category.dart';
+import '../../domain/usecases/update_category.dart';
+import '../../domain/usecases/delete_category.dart';
+import '../../domain/usecases/get_categories.dart';
 
 const int itemsPerPage = 10;
 
-final maintenanceRepositoryProvider = Provider<SupabaseMaintenanceRepository>(
-  (ref) => SupabaseMaintenanceRepository(
-    Supabase.instance.client,
-  ),
-);
+// Repository Provider
+final maintenanceRepositoryProvider =
+    Provider<SupabaseMaintenanceRepository>((ref) {
+  final supabase = ref.watch(supabaseClientProvider);
+  return SupabaseMaintenanceRepository(supabase);
+});
+
+// Validator Providers
+final categoryFormValidatorProvider = Provider<CategoryFormValidator>((ref) {
+  return CategoryFormValidator();
+});
+
+final subcategoryFormValidatorProvider =
+    Provider<SubcategoryFormValidator>((ref) {
+  return SubcategoryFormValidator();
+});
+
+// Service Providers
+final categoryServiceProvider = Provider<CategoryService>((ref) {
+  final repository = ref.watch(maintenanceRepositoryProvider);
+  final validator = ref.watch(categoryFormValidatorProvider);
+  return CategoryService(repository, validator);
+});
+
+final subcategoryServiceProvider = Provider<SubcategoryService>((ref) {
+  final repository = ref.watch(maintenanceRepositoryProvider);
+  final validator = ref.watch(subcategoryFormValidatorProvider);
+  return SubcategoryService(repository, validator);
+});
+
+// Use Case Providers
+final createCategoryProvider = Provider<CreateCategory>((ref) {
+  final repository = ref.watch(maintenanceRepositoryProvider);
+  final validator = ref.watch(categoryFormValidatorProvider);
+  return CreateCategory(repository, validator);
+});
+
+final updateCategoryProvider = Provider<UpdateCategory>((ref) {
+  final repository = ref.watch(maintenanceRepositoryProvider);
+  final validator = ref.watch(categoryFormValidatorProvider);
+  return UpdateCategory(repository, validator);
+});
+
+final deleteCategoryProvider = Provider<DeleteCategory>((ref) {
+  final repository = ref.watch(maintenanceRepositoryProvider);
+  return DeleteCategory(repository);
+});
 
 // Search and filter providers
 final categorySearchQueryProvider = StateProvider<String>((ref) => '');
@@ -28,100 +82,31 @@ final subcategoryPageProvider = StateProvider<int>((ref) => 1);
 final jarPageProvider = StateProvider<int>((ref) => 1);
 
 // Categories provider with search, filter and pagination
-final categoriesProvider = FutureProvider<List<Category>>(
-  (ref) async {
-    final repository = ref.watch(maintenanceRepositoryProvider);
-    final searchQuery = ref.watch(categorySearchQueryProvider).toLowerCase();
-    final showActiveItems = ref.watch(showActiveItemsProvider);
-    final page = ref.watch(categoryPageProvider);
-
-    final result = await repository.getCategories();
-    return result.fold(
-      (failure) => throw Exception(failure.message),
-      (categories) {
-        var filteredCategories = categories;
-
-        // Apply active items filter
-        filteredCategories = filteredCategories
-            .where((category) => category.isActive == showActiveItems)
-            .toList();
-
-        // Apply search filter
-        if (searchQuery.isNotEmpty) {
-          filteredCategories = filteredCategories.where((category) {
-            return category.name.toLowerCase().contains(searchQuery) ||
-                (category.description?.toLowerCase().contains(searchQuery) ??
-                    false);
-          }).toList();
-        }
-
-        // Sort by name
-        filteredCategories.sort((a, b) => a.name.compareTo(b.name));
-
-        // Calculate total pages
-        final totalItems = filteredCategories.length;
-        final totalPages = (totalItems / itemsPerPage).ceil();
-        ref.read(categoryTotalPagesProvider.notifier).state = totalPages;
-
-        // Apply pagination
-        final startIndex = (page - 1) * itemsPerPage;
-        final endIndex = startIndex + itemsPerPage;
-        return filteredCategories.sublist(
-          startIndex,
-          endIndex > totalItems ? totalItems : endIndex,
-        );
-      },
-    );
-  },
-);
+final categoriesProvider =
+    FutureProvider.family<List<Category>, String>((ref, userId) async {
+  final repository = ref.watch(maintenanceRepositoryProvider);
+  final getCategories = GetCategories(repository);
+  final result = await getCategories(userId);
+  return result.fold(
+    (failure) => throw failure,
+    (categories) => categories,
+  );
+});
 
 // Subcategories provider with search, filter and pagination
-final subcategoriesProvider = FutureProvider.family<List<Subcategory>, String?>(
-  (ref, categoryId) async {
-    final repository = ref.watch(maintenanceRepositoryProvider);
-    final searchQuery = ref.watch(subcategorySearchQueryProvider).toLowerCase();
-    final showActiveItems = ref.watch(showActiveSubcategoriesProvider);
-    final page = ref.watch(subcategoryPageProvider);
-
-    final result = await repository.getSubcategories(categoryId: categoryId);
-    return result.fold(
-      (failure) => throw Exception(failure.message),
-      (subcategories) {
-        var filteredSubcategories = subcategories;
-
-        // Apply active items filter
-        filteredSubcategories = filteredSubcategories
-            .where((subcategory) => subcategory.isActive == showActiveItems)
-            .toList();
-
-        // Apply search filter
-        if (searchQuery.isNotEmpty) {
-          filteredSubcategories = filteredSubcategories.where((subcategory) {
-            return subcategory.name.toLowerCase().contains(searchQuery) ||
-                (subcategory.description?.toLowerCase().contains(searchQuery) ??
-                    false);
-          }).toList();
-        }
-
-        // Sort by name
-        filteredSubcategories.sort((a, b) => a.name.compareTo(b.name));
-
-        // Calculate total pages
-        final totalItems = filteredSubcategories.length;
-        final totalPages = (totalItems / itemsPerPage).ceil();
-        ref.read(subcategoryTotalPagesProvider.notifier).state = totalPages;
-
-        // Apply pagination
-        final startIndex = (page - 1) * itemsPerPage;
-        final endIndex = startIndex + itemsPerPage;
-        return filteredSubcategories.sublist(
-          startIndex,
-          endIndex > totalItems ? totalItems : endIndex,
-        );
-      },
-    );
-  },
-);
+final subcategoriesProvider =
+    FutureProvider.family<List<Subcategory>, String>((ref, categoryId) async {
+  final service = ref.watch(subcategoryServiceProvider);
+  final showActiveItems = ref.watch(showActiveItemsProvider);
+  final result = await service.getSubcategories(
+    categoryId: categoryId,
+    isActive: showActiveItems,
+  );
+  return result.fold(
+    (failure) => throw failure,
+    (subcategories) => subcategories,
+  );
+});
 
 final jarsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final client = ref.watch(supabaseClientProvider);

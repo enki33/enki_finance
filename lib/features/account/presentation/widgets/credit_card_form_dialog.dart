@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:enki_finance/core/providers/validator_providers.dart';
+import 'package:enki_finance/features/account/domain/validators/credit_card_form_validator.dart';
 import 'package:enki_finance/features/account/domain/entities/account.dart';
 import 'package:enki_finance/features/account/domain/entities/credit_card_details.dart';
+import '../providers/credit_card_form_provider.dart';
 
 class CreditCardFormDialog extends ConsumerStatefulWidget {
   final Account? account;
@@ -47,6 +51,9 @@ class _CreditCardFormDialogState extends ConsumerState<CreditCardFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final validator = ref.watch(creditCardFormValidatorProvider);
+    final amountValidator = ref.watch(amountValidatorProvider);
+
     return AlertDialog(
       title: Text(widget.account == null ? 'Nueva Tarjeta' : 'Editar Tarjeta'),
       content: Form(
@@ -85,16 +92,11 @@ class _CreditCardFormDialogState extends ConsumerState<CreditCardFormDialog> {
                   prefixText: '\$',
                 ),
                 keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'El límite de crédito es requerido';
-                  }
-                  final limit = double.tryParse(value);
-                  if (limit == null || limit <= 0) {
-                    return 'Ingresa un valor válido';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                    amountValidator.validatePositiveAmount(value).fold(
+                          (failure) => failure.message,
+                          (_) => null,
+                        ),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -104,16 +106,11 @@ class _CreditCardFormDialogState extends ConsumerState<CreditCardFormDialog> {
                   suffixText: '%',
                 ),
                 keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'La tasa de interés es requerida';
-                  }
-                  final rate = double.tryParse(value);
-                  if (rate == null || rate < 0) {
-                    return 'Ingresa un valor válido';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                    amountValidator.validatePercentage(value).fold(
+                          (failure) => failure.message,
+                          (_) => null,
+                        ),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(

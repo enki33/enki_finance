@@ -26,4 +26,15 @@ class JarModel with _$JarModel {
         createdAt: jar.createdAt,
         updatedAt: jar.updatedAt,
       );
+
+  const JarModel._();
+
+  Jar toEntity() => Jar(
+        id: id,
+        userId: userId,
+        name: name,
+        targetPercentage: targetPercentage,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+      );
 }

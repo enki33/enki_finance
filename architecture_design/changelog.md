@@ -141,3 +141,12 @@
 - Account and jar management
 - Transaction filtering
 - Real-time updates 
+
+## Pending Tasks
+
+### Testing
+- Fix Supabase mock implementations in transaction repository tests:
+  - Resolve type mismatches between `MockPostgrestFilterBuilder` and `SupabaseQueryBuilder`
+  - Implement missing methods `eq` and `order` in `SupabaseQueryBuilder` mock
+  - Update test setup to use correct mock hierarchy for Supabase client
+  - Ensure proper type safety in mock implementations 

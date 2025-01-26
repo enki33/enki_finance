@@ -3,9 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../providers/transaction_filter_provider.dart';
 import '../../../maintenance/presentation/providers/maintenance_providers.dart';
+import '../providers/transaction_provider.dart';
+import '../providers/current_transaction_provider.dart';
 
 class TransactionFilter extends ConsumerStatefulWidget {
-  const TransactionFilter({super.key});
+  final String userId;
+
+  const TransactionFilter({
+    super.key,
+    required this.userId,
+  });
 
   @override
   ConsumerState<TransactionFilter> createState() => _TransactionFilterState();
@@ -20,6 +27,7 @@ class _TransactionFilterState extends ConsumerState<TransactionFilter> {
   void initState() {
     super.initState();
     final filter = ref.read(transactionFilterProvider);
+    ref.read(transactionFilterProvider.notifier).setUserId(widget.userId);
     _minAmountController.text = filter.minAmount?.toString() ?? '';
     _maxAmountController.text = filter.maxAmount?.toString() ?? '';
     if (filter.startDate != null && filter.endDate != null) {
@@ -42,7 +50,7 @@ class _TransactionFilterState extends ConsumerState<TransactionFilter> {
     final filter = ref.watch(transactionFilterProvider);
     final notifier = ref.read(transactionFilterProvider.notifier);
     final transactionTypesAsync = ref.watch(transactionTypesProvider);
-    final categoriesAsync = ref.watch(categoriesProvider);
+    final categoriesAsync = ref.watch(categoriesProvider(filter.userId ?? ''));
     final subcategoriesAsync = filter.categoryId != null
         ? ref.watch(subcategoriesProvider(filter.categoryId!))
         : null;

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:enki_finance/features/maintenance/presentation/providers/maintenance_providers.dart';
+import 'package:enki_finance/core/providers/validator_providers.dart';
 
 class JarFormDialog extends ConsumerStatefulWidget {
   final Map<String, dynamic>? jar;
@@ -43,6 +45,7 @@ class _JarFormDialogState extends ConsumerState<JarFormDialog> {
   @override
   Widget build(BuildContext context) {
     final isSaving = ref.watch(isSavingProvider);
+    final amountValidator = ref.watch(amountValidatorProvider);
 
     return AlertDialog(
       title: Text(isEditing ? 'Editar Jarra' : 'Nueva Jarra'),
@@ -86,19 +89,11 @@ class _JarFormDialogState extends ConsumerState<JarFormDialog> {
                 ),
                 enabled: !isSaving,
                 keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'El porcentaje es requerido';
-                  }
-                  final percentage = double.tryParse(value);
-                  if (percentage == null) {
-                    return 'Ingrese un número válido';
-                  }
-                  if (percentage < 0 || percentage > 100) {
-                    return 'El porcentaje debe estar entre 0 y 100';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                    amountValidator.validatePercentage(value).fold(
+                          (failure) => failure.message,
+                          (_) => null,
+                        ),
               ),
               if (isEditing) ...[
                 const SizedBox(height: 16),

@@ -1,8 +1,25 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:enki_finance/features/jars/domain/entities/jar_distribution.dart';
+import 'package:enki_finance/features/jars/domain/entities/jar.dart';
+import 'package:enki_finance/features/jars/data/models/jar_model.dart';
 
 /// Interface for jar remote data operations
 abstract class JarRemoteDataSource {
+  /// Creates a new jar
+  Future<Jar> createJar(Jar jar);
+
+  /// Updates an existing jar
+  Future<Jar> updateJar(Jar jar);
+
+  /// Deletes a jar
+  Future<void> deleteJar(String jarId);
+
+  /// Gets a jar by ID
+  Future<Jar> getJar(String jarId);
+
+  /// Gets all jars for a user
+  Future<List<Jar>> getJars(String userId);
+
   /// Analyzes the distribution of funds across jars
   Future<List<JarDistribution>> analyzeDistribution({
     required String userId,
@@ -35,6 +52,46 @@ class JarRemoteDataSourceImpl implements JarRemoteDataSource {
   const JarRemoteDataSourceImpl(this._supabase);
 
   final SupabaseClient _supabase;
+
+  @override
+  Future<Jar> createJar(Jar jar) async {
+    final model = JarModel.fromEntity(jar);
+    final response =
+        await _supabase.from('jar').insert(model.toJson()).select().single();
+    return JarModel.fromJson(response).toEntity();
+  }
+
+  @override
+  Future<void> deleteJar(String jarId) async {
+    await _supabase.from('jar').delete().eq('id', jarId);
+  }
+
+  @override
+  Future<Jar> getJar(String jarId) async {
+    final response =
+        await _supabase.from('jar').select().eq('id', jarId).single();
+    return JarModel.fromJson(response).toEntity();
+  }
+
+  @override
+  Future<List<Jar>> getJars(String userId) async {
+    final response = await _supabase.from('jar').select().eq('user_id', userId);
+    return (response as List<dynamic>)
+        .map((json) => JarModel.fromJson(json).toEntity())
+        .toList();
+  }
+
+  @override
+  Future<Jar> updateJar(Jar jar) async {
+    final model = JarModel.fromEntity(jar);
+    final response = await _supabase
+        .from('jar')
+        .update(model.toJson())
+        .eq('id', jar.id)
+        .select()
+        .single();
+    return JarModel.fromJson(response).toEntity();
+  }
 
   @override
   Future<List<JarDistribution>> analyzeDistribution({

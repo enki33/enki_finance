@@ -9,6 +9,8 @@ import 'package:enki_finance/core/error/failures.dart';
 import 'package:enki_finance/features/maintenance/domain/entities/category.dart';
 import 'package:enki_finance/features/maintenance/domain/entities/subcategory.dart';
 import 'package:intl/intl.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:enki_finance/core/providers/validator_providers.dart';
 
 class TransactionForm extends ConsumerStatefulWidget {
   final String userId;
@@ -29,6 +31,7 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   late final TextEditingController _descriptionController;
   late final TextEditingController _amountController;
   late final TextEditingController _notesController;
+  late final TextEditingController _dateController;
   late DateTime _transactionDate;
   String? _selectedTransactionType;
   String? _selectedCategory;
@@ -49,14 +52,18 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
       text: widget.transaction?.amount.toString() ?? '',
     );
     _notesController = TextEditingController(text: widget.transaction?.notes);
+    _dateController = TextEditingController();
     _transactionDate = widget.transaction?.transactionDate ?? DateTime.now();
+    _dateController.text = DateFormat('dd/MM/yyyy').format(_transactionDate);
     _selectedTransactionType = widget.transaction?.transactionTypeId;
     _selectedCategory = widget.transaction?.categoryId;
     _selectedSubcategory = widget.transaction?.subcategoryId;
     _selectedAccount = widget.transaction?.accountId;
     _selectedJar = widget.transaction?.jarId;
     _selectedMedium = widget.transaction?.transactionMediumId;
-    _tags = widget.transaction?.tags;
+    _tags = widget.transaction?.tags
+        ?.asMap()
+        .map((k, v) => MapEntry(k.toString(), v));
 
     // Check if jar is required for initial subcategory
     if (_selectedSubcategory != null) {
@@ -109,19 +116,22 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     _descriptionController.dispose();
     _amountController.dispose();
     _notesController.dispose();
+    _dateController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final transactionTypesAsync = ref.watch(transactionTypesProvider);
-    final categoriesAsync = ref.watch(categoriesProvider);
+    final categoriesAsync = ref.watch(categoriesProvider(widget.userId));
     final subcategoriesAsync = _selectedCategory != null
         ? ref.watch(subcategoriesProvider(_selectedCategory!))
         : null;
     final accountsAsync = ref.watch(accountsProvider);
     final jarsAsync = ref.watch(jarsProvider);
     final isSubmitting = ref.watch(transactionNotifierProvider).isLoading;
+    final amountValidator = ref.watch(amountValidatorProvider);
+    final dateValidator = ref.watch(dateValidatorProvider);
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -146,32 +156,33 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
               ),
 
             // Transaction Date
-            InkWell(
-              onTap: isSubmitting
-                  ? null
-                  : () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: _transactionDate,
-                        firstDate:
-                            DateTime.now().subtract(const Duration(days: 365)),
-                        lastDate: DateTime.now(),
-                      );
-                      if (date != null) {
-                        setState(() {
-                          _transactionDate = date;
-                        });
-                      }
-                    },
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Fecha',
-                  suffixIcon: Icon(Icons.calendar_today),
-                ),
-                child: Text(
-                  DateFormat('dd/MM/yyyy').format(_transactionDate),
-                ),
+            TextFormField(
+              controller: _dateController,
+              decoration: const InputDecoration(
+                labelText: 'Fecha',
+                border: OutlineInputBorder(),
               ),
+              readOnly: true,
+              validator: (value) =>
+                  dateValidator.validateTransactionDate(value).fold(
+                        (failure) => failure.message,
+                        (_) => null,
+                      ),
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: _transactionDate,
+                  firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                  lastDate: DateTime.now(),
+                );
+                if (date != null) {
+                  setState(() {
+                    _transactionDate = date;
+                    _dateController.text =
+                        DateFormat('dd/MM/yyyy').format(date);
+                  });
+                }
+              },
             ),
             const SizedBox(height: 16),
 
@@ -185,7 +196,11 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
               ),
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
-              validator: _validateAmount,
+              validator: (value) =>
+                  amountValidator.validatePositiveAmount(value).fold(
+                        (failure) => failure.message,
+                        (_) => null,
+                      ),
               enabled: !isSubmitting,
               onChanged: (value) {
                 // Format the input to show only valid decimal numbers
@@ -436,9 +451,9 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
           transactionMediumId: _selectedMedium,
           currencyId: 'MXN', // TODO: Implement currency selection
           notes: _notesController.text.isEmpty ? null : _notesController.text,
-          tags: _tags,
+          tags: _tags?.values.map((v) => v.toString()).toList(),
           createdAt: widget.transaction?.createdAt ?? DateTime.now(),
-          modifiedAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
 
         final notifier = ref.read(transactionNotifierProvider.notifier);

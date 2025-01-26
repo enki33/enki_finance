@@ -76,7 +76,7 @@ class TransactionsPage extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => const widgets.TransactionFilter(),
+      builder: (context) => widgets.TransactionFilter(userId: userId),
     );
   }
 }

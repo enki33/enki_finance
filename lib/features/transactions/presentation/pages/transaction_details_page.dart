@@ -24,7 +24,7 @@ class TransactionDetailsPage extends ConsumerWidget {
     );
 
     final transactionTypesAsync = ref.watch(transactionTypesProvider);
-    final categoriesAsync = ref.watch(categoriesProvider);
+    final categoriesAsync = ref.watch(categoriesProvider(transaction.userId));
     final subcategoriesAsync =
         ref.watch(subcategoriesProvider(transaction.categoryId));
     final jarsAsync = ref.watch(jarsProvider);

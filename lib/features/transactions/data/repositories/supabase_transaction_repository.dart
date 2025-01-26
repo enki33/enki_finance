@@ -1,64 +1,39 @@
-import 'package:dartz/dartz.dart';
-import '../../../../core/error/failures.dart';
-import '../../domain/entities/transaction.dart';
-import '../../domain/entities/daily_total.dart';
-import '../../domain/repositories/transaction_repository.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
-import '../../presentation/providers/transaction_filter_provider.dart';
+
+import '../../../../core/error/failures.dart';
+import '../../domain/entities/transaction.dart';
+import '../../domain/entities/transaction_analysis.dart';
+import '../../domain/entities/transaction_filter.dart';
+import '../../domain/repositories/transaction_repository.dart';
+import '../datasources/transaction_remote_data_source.dart';
+import '../../domain/entities/transaction_summary.dart' as summary;
+import '../../domain/entities/daily_total.dart';
+import '../../domain/entities/balance_history.dart';
 
 class SupabaseTransactionRepository implements TransactionRepository {
   final SupabaseClient supabase;
+  final TransactionRemoteDataSource _remoteDataSource;
 
-  SupabaseTransactionRepository(this.supabase);
+  const SupabaseTransactionRepository(this.supabase, this._remoteDataSource);
 
   @override
   Future<Either<Failure, Transaction>> createTransaction(
       Transaction transaction) async {
     try {
-      debugPrint('Creating transaction...');
-      debugPrint(
-          'Transaction date: ${transaction.transactionDate.toUtc().toIso8601String()}');
-
-      final response = await supabase
-          .from('transaction')
-          .insert({
-            'user_id': transaction.userId,
-            'transaction_date':
-                transaction.transactionDate.toUtc().toIso8601String(),
-            'description': transaction.description,
-            'amount': transaction.amount,
-            'transaction_type_id': transaction.transactionTypeId,
-            'category_id': transaction.categoryId,
-            'subcategory_id': transaction.subcategoryId,
-            'account_id': transaction.accountId,
-            'jar_id': transaction.jarId,
-            'transaction_medium_id': transaction.transactionMediumId,
-            'currency_id': transaction.currencyId,
-            'exchange_rate': transaction.exchangeRate,
-            'notes': transaction.notes,
-            'tags': transaction.tags,
-            'is_recurring': transaction.isRecurring,
-            'parent_recurring_id': transaction.parentRecurringId,
-          })
-          .select()
-          .single();
-
-      debugPrint('Transaction created successfully');
-      return Right(Transaction.fromJson(response));
-    } catch (e) {
-      debugPrint('Error creating transaction: $e');
+      final result = await _remoteDataSource.createTransaction(transaction);
+      return right(result);
+    } on PostgrestException catch (e) {
       if (e.toString().contains('foreign key constraint')) {
-        return Left(ValidationFailure(
-            message: 'Invalid reference: One or more IDs do not exist'));
-      }
-      if (e.toString().contains('duplicate key')) {
-        return Left(ValidationFailure(message: 'Transaction already exists'));
+        return left(ValidationFailure('Invalid foreign key reference'));
       }
       if (e.toString().contains('permission denied')) {
-        return Left(UnauthorizedFailure(message: 'Permission denied'));
+        return left(AuthorizationFailure('Permission denied'));
       }
-      return Left(ServerFailure(message: e.toString()));
+      return left(ServerFailure(e.toString()));
+    } catch (e) {
+      return left(ServerFailure(e.toString()));
     }
   }
 
@@ -68,47 +43,18 @@ class SupabaseTransactionRepository implements TransactionRepository {
     TransactionFilter? filter,
   }) async {
     try {
-      final startDate = (filter?.startDate ?? DateTime(2000)).toUtc();
-      final endDate = (filter?.endDate ?? DateTime.now()).toUtc();
-
-      debugPrint('\nDate Parameters (UTC):');
-      debugPrint('Start Date: ${startDate.toIso8601String()}');
-      debugPrint('End Date: ${endDate.toIso8601String()}');
-
-      final params = {
-        'p_user_id': userId,
-        'p_start_date': startDate.toIso8601String(),
-        'p_end_date': endDate.toIso8601String(),
-        'p_account_id': filter?.accountId,
-        'p_category_id': filter?.categoryId,
-        'p_subcategory_id': filter?.subcategoryId,
-        'p_transaction_type_id': filter?.transactionTypeId,
-        'p_jar_id': filter?.jarId,
-      };
-
-      debugPrint('\nRPC Parameters:');
-      debugPrint('Calling get_transactions_by_date_range with params:');
-      params.forEach((key, value) => debugPrint('  $key: $value'));
-
-      final response = await supabase.rpc(
-        'get_transactions_by_date_range',
-        params: params,
+      final result = await _remoteDataSource.getTransactions(
+        userId: userId,
+        filter: filter,
       );
-
-      return Right((response as List)
-          .map<Transaction>((json) => Transaction.fromJson(json))
-          .toList());
-    } catch (e, stackTrace) {
-      debugPrint('\n=== Error in getTransactions ===');
-      debugPrint('Error Type: ${e.runtimeType}');
-      debugPrint('Error Message: $e');
-      debugPrint('Stack Trace:\n$stackTrace');
-      debugPrint('=== End Error Info ===\n');
-
+      return right(result);
+    } on PostgrestException catch (e) {
       if (e.toString().contains('permission denied')) {
-        return Left(UnauthorizedFailure(message: 'Permission denied'));
+        return left(AuthorizationFailure('Permission denied'));
       }
-      return Left(ServerFailure(message: e.toString()));
+      return left(ServerFailure(e.toString()));
+    } catch (e) {
+      return left(ServerFailure(e.toString()));
     }
   }
 
@@ -116,42 +62,30 @@ class SupabaseTransactionRepository implements TransactionRepository {
   Future<Either<Failure, Transaction>> updateTransaction(
       Transaction transaction) async {
     try {
-      final response = await supabase
-          .from('transaction')
-          .update({
-            'transaction_date':
-                transaction.transactionDate.toUtc().toIso8601String(),
-            'description': transaction.description,
-            'amount': transaction.amount,
-            'transaction_type_id': transaction.transactionTypeId,
-            'category_id': transaction.categoryId,
-            'subcategory_id': transaction.subcategoryId,
-            'account_id': transaction.accountId,
-            'jar_id': transaction.jarId,
-            'transaction_medium_id': transaction.transactionMediumId,
-            'currency_id': transaction.currencyId,
-            'exchange_rate': transaction.exchangeRate,
-            'notes': transaction.notes,
-            'tags': transaction.tags,
-            'modified_at': DateTime.now().toUtc().toIso8601String(),
-          })
-          .eq('id', transaction.id)
-          .select()
-          .single();
-
-      return Right(Transaction.fromJson(response));
+      final result = await _remoteDataSource.updateTransaction(transaction);
+      return right(result);
+    } on PostgrestException catch (e) {
+      if (e.toString().contains('permission denied')) {
+        return left(AuthorizationFailure('Permission denied'));
+      }
+      return left(ServerFailure(e.toString()));
     } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+      return left(ServerFailure(e.toString()));
     }
   }
 
   @override
   Future<Either<Failure, Unit>> deleteTransaction(String transactionId) async {
     try {
-      await supabase.from('transaction').delete().eq('id', transactionId);
-      return const Right(unit);
+      await _remoteDataSource.deleteTransaction(transactionId);
+      return right(unit);
+    } on PostgrestException catch (e) {
+      if (e.toString().contains('permission denied')) {
+        return left(AuthorizationFailure('Permission denied'));
+      }
+      return left(ServerFailure(e.toString()));
     } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+      return left(ServerFailure(e.toString()));
     }
   }
 
@@ -162,81 +96,401 @@ class SupabaseTransactionRepository implements TransactionRepository {
     required DateTime endDate,
   }) async {
     try {
-      final utcStartDate = startDate.toUtc();
-      final utcEndDate = endDate.toUtc();
-
-      debugPrint('\nTransaction Summary Date Parameters (UTC):');
-      debugPrint('Start Date: ${utcStartDate.toIso8601String()}');
-      debugPrint('End Date: ${utcEndDate.toIso8601String()}');
-
-      final response = await supabase.rpc(
-        'get_transaction_summary_by_date_range',
-        params: {
-          'p_user_id': userId,
-          'p_start_date': utcStartDate.toIso8601String(),
-          'p_end_date': utcEndDate.toIso8601String(),
-        },
+      final result = await _remoteDataSource.getTransactionSummary(
+        userId: userId,
+        startDate: startDate,
+        endDate: endDate,
       );
-
-      final summary = <String, double>{};
-      for (final row in response as List) {
-        summary[row['transaction_type'] as String] =
-            (row['total_amount'] as num).toDouble();
+      return right(result);
+    } on PostgrestException catch (e) {
+      if (e.toString().contains('permission denied')) {
+        return left(AuthorizationFailure('Permission denied'));
       }
-
-      return Right(summary);
+      return left(ServerFailure(e.toString()));
     } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+      return left(ServerFailure(e.toString()));
     }
   }
 
-  Future<Either<Failure, List<DailyTotal>>> getDailyTotals({
+  @override
+  Future<Either<Failure, List<CategoryAnalysis>>> analyzeByCategory({
+    required String userId,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? transactionType,
+  }) async {
+    try {
+      final result = await _remoteDataSource.analyzeByCategory(
+        userId: userId,
+        startDate: startDate,
+        endDate: endDate,
+        transactionType: transactionType,
+      );
+      return right(result);
+    } on PostgrestException catch (e) {
+      if (e.toString().contains('permission denied')) {
+        return left(AuthorizationFailure('Permission denied'));
+      }
+      return left(ServerFailure(e.toString()));
+    } catch (e) {
+      return left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<DailyTotals>>> getDailyTotals({
     required String userId,
     required DateTime startDate,
     required DateTime endDate,
     String? transactionTypeId,
   }) async {
     try {
-      final utcStartDate = startDate.toUtc();
-      final utcEndDate = endDate.toUtc();
-
-      debugPrint('\nDaily Totals Date Parameters (UTC):');
-      debugPrint('Start Date: ${utcStartDate.toIso8601String()}');
-      debugPrint('End Date: ${utcEndDate.toIso8601String()}');
-
-      final response = await supabase.rpc(
-        'get_daily_transaction_totals',
-        params: {
-          'p_user_id': userId,
-          'p_start_date': utcStartDate.toIso8601String(),
-          'p_end_date': utcEndDate.toIso8601String(),
-          'p_transaction_type_id': transactionTypeId,
-        },
+      final result = await _remoteDataSource.getDailyTotals(
+        userId: userId,
+        startDate: startDate,
+        endDate: endDate,
+        transactionTypeId: transactionTypeId,
       );
-
-      if (response is List && response.isNotEmpty) {
-        debugPrint('\nFirst Row Date Analysis:');
-        debugPrint('Raw date: ${response[0]['transaction_date']}');
-        debugPrint('Type: ${response[0]['transaction_date'].runtimeType}');
+      return right(result);
+    } on PostgrestException catch (e) {
+      if (e.toString().contains('permission denied')) {
+        return left(AuthorizationFailure('Permission denied'));
       }
+      return left(ServerFailure(e.toString()));
+    } catch (e) {
+      return left(ServerFailure(e.toString()));
+    }
+  }
 
-      final totals = (response as List).map<DailyTotal>((json) {
-        final rawDate = json['transaction_date'] as String;
-        final date = DateTime.parse(rawDate).toUtc();
-        return DailyTotal(
-          date: date,
-          amount: (json['total_amount'] as num).toDouble(),
-          count: json['transaction_count'] as int,
-        );
-      }).toList();
+  @override
+  Future<Either<Failure, List<summary.TransactionSummary>>>
+      getSummaryByDateRange({
+    required String userId,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      final result = await _remoteDataSource.getSummaryByDateRange(
+        userId: userId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+      return right(result);
+    } on PostgrestException catch (e) {
+      if (e.toString().contains('permission denied')) {
+        return left(AuthorizationFailure('Permission denied'));
+      }
+      return left(ServerFailure(e.toString()));
+    } catch (e) {
+      return left(ServerFailure(e.toString()));
+    }
+  }
 
-      return Right(totals);
-    } catch (e, stackTrace) {
-      debugPrint('\n=== Error in getDailyTotals ===');
-      debugPrint('Error Type: ${e.runtimeType}');
-      debugPrint('Error Message: $e');
-      debugPrint('Stack Trace:\n$stackTrace');
-      return Left(ServerFailure(message: e.toString()));
+  @override
+  Future<Either<Failure, List<Transaction>>> searchByTags({
+    required String userId,
+    required List<String> tags,
+  }) async {
+    try {
+      final result = await _remoteDataSource.searchByTags(
+        userId: userId,
+        tags: tags,
+      );
+      return right(result);
+    } on PostgrestException catch (e) {
+      if (e.toString().contains('permission denied')) {
+        return left(AuthorizationFailure('Permission denied'));
+      }
+      return left(ServerFailure(e.toString()));
+    } catch (e) {
+      return left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Transaction>>> searchByNotes({
+    required String userId,
+    required String searchText,
+  }) async {
+    try {
+      final result = await _remoteDataSource.searchByNotes(
+        userId: userId,
+        searchText: searchText,
+      );
+      return right(result);
+    } on PostgrestException catch (e) {
+      if (e.toString().contains('permission denied')) {
+        return left(AuthorizationFailure('Permission denied'));
+      }
+      return left(ServerFailure(e.toString()));
+    } catch (e) {
+      return left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Transaction>>> getTransactionsByDateRange({
+    required String userId,
+    required DateTime startDate,
+    required DateTime endDate,
+    String? transactionTypeId,
+    String? categoryId,
+    String? subcategoryId,
+    String? accountId,
+    String? jarId,
+  }) async {
+    try {
+      final result = await _remoteDataSource.getTransactionsByDateRange(
+        userId: userId,
+        startDate: startDate,
+        endDate: endDate,
+        transactionTypeId: transactionTypeId,
+        categoryId: categoryId,
+        subcategoryId: subcategoryId,
+        accountId: accountId,
+        jarId: jarId,
+      );
+      return right(result);
+    } on PostgrestException catch (e) {
+      if (e.toString().contains('permission denied')) {
+        return left(AuthorizationFailure('Permission denied'));
+      }
+      return left(ServerFailure(e.toString()));
+    } catch (e) {
+      return left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> validateTransaction({
+    required Transaction transaction,
+    required bool isUpdate,
+  }) async {
+    try {
+      final result = await _remoteDataSource.validateTransaction(
+        transaction: transaction,
+        isUpdate: isUpdate,
+      );
+      return right(result);
+    } on PostgrestException catch (e) {
+      if (e.toString().contains('permission denied')) {
+        return left(AuthorizationFailure('Permission denied'));
+      }
+      return left(ServerFailure(e.toString()));
+    } catch (e) {
+      return left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> validateAccount(String accountId) async {
+    final result = await _remoteDataSource.validateTransaction(
+      transaction: Transaction(
+        id: '',
+        userId: '',
+        transactionTypeId: '',
+        categoryId: '',
+        accountId: accountId,
+        amount: 0,
+        currencyId: '',
+        transactionDate: DateTime.now(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      isUpdate: false,
+    );
+    return result
+        ? const Right(unit)
+        : Left(ValidationFailure('Invalid account'));
+  }
+
+  @override
+  Future<Either<Failure, Unit>> validateBalance(Transaction transaction) async {
+    final result = await _remoteDataSource.validateTransaction(
+      transaction: transaction,
+      isUpdate: false,
+    );
+    return result
+        ? const Right(unit)
+        : Left(ValidationFailure('Insufficient balance'));
+  }
+
+  @override
+  Future<Either<Failure, Unit>> validateCategory({
+    required String categoryId,
+    String? subcategoryId,
+  }) async {
+    final result = await _remoteDataSource.validateTransaction(
+      transaction: Transaction(
+        id: '',
+        userId: '',
+        transactionTypeId: '',
+        categoryId: categoryId,
+        subcategoryId: subcategoryId,
+        accountId: '',
+        amount: 0,
+        currencyId: '',
+        transactionDate: DateTime.now(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      isUpdate: false,
+    );
+    return result
+        ? const Right(unit)
+        : Left(ValidationFailure('Invalid category'));
+  }
+
+  @override
+  Future<Either<Failure, Unit>> validateCreditLimit({
+    required String accountId,
+    required double amount,
+  }) async {
+    final result = await _remoteDataSource.validateTransaction(
+      transaction: Transaction(
+        id: '',
+        userId: '',
+        transactionTypeId: '',
+        categoryId: '',
+        accountId: accountId,
+        amount: amount,
+        currencyId: '',
+        transactionDate: DateTime.now(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      isUpdate: false,
+    );
+    return result
+        ? const Right(unit)
+        : Left(ValidationFailure('Credit limit exceeded'));
+  }
+
+  @override
+  Future<Either<Failure, Unit>> validateCurrency(String currencyId) async {
+    final result = await _remoteDataSource.validateTransaction(
+      transaction: Transaction(
+        id: '',
+        userId: '',
+        transactionTypeId: '',
+        categoryId: '',
+        accountId: '',
+        amount: 0,
+        currencyId: currencyId,
+        transactionDate: DateTime.now(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      isUpdate: false,
+    );
+    return result
+        ? const Right(unit)
+        : Left(ValidationFailure('Invalid currency'));
+  }
+
+  @override
+  Future<Either<Failure, Unit>> validateJarRequirement({
+    String? jarId,
+    String? subcategoryId,
+  }) async {
+    final result = await _remoteDataSource.validateTransaction(
+      transaction: Transaction(
+        id: '',
+        userId: '',
+        transactionTypeId: '',
+        categoryId: '',
+        subcategoryId: subcategoryId,
+        accountId: '',
+        amount: 0,
+        currencyId: '',
+        jarId: jarId,
+        transactionDate: DateTime.now(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      isUpdate: false,
+    );
+    return result
+        ? const Right(unit)
+        : Left(ValidationFailure('Jar is required for this category'));
+  }
+
+  @override
+  Future<Either<Failure, List<BalanceHistory>>> getAccountBalanceHistory({
+    required String accountId,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      final result = await _remoteDataSource.getAccountBalanceHistory(
+        accountId: accountId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+      return Right(result);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<BalanceHistory>>> getJarBalanceHistory({
+    required String jarId,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      final result = await _remoteDataSource.getJarBalanceHistory(
+        jarId: jarId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+      return Right(result);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, double>> calculateAccountBalance({
+    required String accountId,
+    DateTime? asOf,
+  }) async {
+    try {
+      final result = await _remoteDataSource.calculateAccountBalance(
+        accountId: accountId,
+        asOf: asOf,
+      );
+      return Right(result);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, double>> calculateJarBalance({
+    required String jarId,
+    DateTime? asOf,
+  }) async {
+    try {
+      final result = await _remoteDataSource.calculateJarBalance(
+        jarId: jarId,
+        asOf: asOf,
+      );
+      return Right(result);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> recordBalanceHistory(
+      BalanceHistory history) async {
+    try {
+      await _remoteDataSource.recordBalanceHistory(history);
+      return const Right(unit);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
     }
   }
 }

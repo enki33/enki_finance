@@ -1,4 +1,4 @@
-import 'package:dartz/dartz.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:enki_finance/core/error/failures.dart';
 import 'package:enki_finance/features/account/data/datasources/account_remote_data_source.dart';
 import 'package:enki_finance/features/account/data/models/account_model.dart';
@@ -19,9 +19,9 @@ class AccountRepositoryImpl implements AccountRepository {
       final accounts = await remoteDataSource.getAccounts();
       return Right(accounts.map((model) => model.toEntity()).toList());
     } on PostgrestException catch (e) {
-      return Left(ServerFailure(message: e.message, code: e.code));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -31,9 +31,9 @@ class AccountRepositoryImpl implements AccountRepository {
       final account = await remoteDataSource.getAccountById(id);
       return Right(account.toEntity());
     } on PostgrestException catch (e) {
-      return Left(ServerFailure(message: e.message, code: e.code));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -44,9 +44,9 @@ class AccountRepositoryImpl implements AccountRepository {
       final createdAccount = await remoteDataSource.createAccount(accountModel);
       return Right(createdAccount.toEntity());
     } on PostgrestException catch (e) {
-      return Left(ServerFailure(message: e.message, code: e.code));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -57,9 +57,9 @@ class AccountRepositoryImpl implements AccountRepository {
       final updatedAccount = await remoteDataSource.updateAccount(accountModel);
       return Right(updatedAccount.toEntity());
     } on PostgrestException catch (e) {
-      return Left(ServerFailure(message: e.message, code: e.code));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -69,9 +69,9 @@ class AccountRepositoryImpl implements AccountRepository {
       await remoteDataSource.deleteAccount(id);
       return const Right(null);
     } on PostgrestException catch (e) {
-      return Left(ServerFailure(message: e.message, code: e.code));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -93,9 +93,9 @@ class AccountRepositoryImpl implements AccountRepository {
       final details = await remoteDataSource.getCreditCardDetails(accountId);
       return Right(details.toEntity());
     } on PostgrestException catch (e) {
-      return Left(ServerFailure(message: e.message, code: e.code));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -108,9 +108,9 @@ class AccountRepositoryImpl implements AccountRepository {
           await remoteDataSource.createCreditCardDetails(detailsModel);
       return Right(createdDetails.toEntity());
     } on PostgrestException catch (e) {
-      return Left(ServerFailure(message: e.message, code: e.code));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -123,9 +123,9 @@ class AccountRepositoryImpl implements AccountRepository {
           await remoteDataSource.updateCreditCardDetails(detailsModel);
       return Right(updatedDetails.toEntity());
     } on PostgrestException catch (e) {
-      return Left(ServerFailure(message: e.message, code: e.code));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -135,9 +135,9 @@ class AccountRepositoryImpl implements AccountRepository {
       await remoteDataSource.deleteCreditCardDetails(id);
       return const Right(null);
     } on PostgrestException catch (e) {
-      return Left(ServerFailure(message: e.message, code: e.code));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
+      return Left(ServerFailure(e.toString()));
     }
   }
 }

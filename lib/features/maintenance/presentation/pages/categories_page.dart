@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:enki_finance/features/maintenance/presentation/widgets/category_list.dart';
 import 'package:enki_finance/features/maintenance/presentation/widgets/subcategory_list.dart';
+import 'package:enki_finance/core/providers/current_user_id_provider.dart';
 
 class CategoriesPage extends ConsumerStatefulWidget {
   const CategoriesPage({super.key});
@@ -55,11 +56,15 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage>
         children: [
           Builder(builder: (context) {
             print('DEBUG: Building Categories tab');
-            return const CategoryList();
+            final userId = ref.watch(currentUserIdProvider);
+            return CategoryList(userId: userId);
           }),
           Builder(builder: (context) {
             print('DEBUG: Building Subcategories tab');
-            return const SubcategoryList();
+            return const Center(
+              child:
+                  Text('Selecciona una categoría para ver sus subcategorías'),
+            );
           }),
         ],
       ),

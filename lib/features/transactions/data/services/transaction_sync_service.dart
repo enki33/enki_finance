@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:dartz/dartz.dart';
+import 'package:fpdart/fpdart.dart';
 
 import '../../domain/entities/transaction.dart';
 import '../../../../core/error/failures.dart';
@@ -39,7 +39,7 @@ class TransactionSyncService {
       return Right(mergedTransactions);
     } catch (e) {
       debugPrint('Error syncing transactions: $e');
-      return Left(ServerFailure(message: e.toString()));
+      return Left(ServerFailure(e.toString()));
     }
   }
 
@@ -57,8 +57,7 @@ class TransactionSyncService {
       if (lastSyncTimestamp != null) {
         return transactions
             .where((t) =>
-                t.modifiedAt != null &&
-                t.modifiedAt!.isAfter(lastSyncTimestamp))
+                t.updatedAt != null && t.updatedAt!.isAfter(lastSyncTimestamp))
             .toList();
       }
 

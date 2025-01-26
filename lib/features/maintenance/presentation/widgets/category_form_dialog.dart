@@ -45,122 +45,113 @@ class _CategoryFormDialogState extends ConsumerState<CategoryFormDialog> {
   Widget build(BuildContext context) {
     final isEditing = widget.category != null;
     final isSaving = ref.watch(isSavingProvider);
-    final transactionTypesAsync = ref.watch(transactionTypesProvider);
+    final validator = ref.watch(categoryFormValidatorProvider);
 
     return AlertDialog(
       title: Text(isEditing ? 'Editar Categoría' : 'Nueva Categoría'),
-      content: transactionTypesAsync.when(
-        data: (transactionTypes) => Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: _nameController,
-                  enabled: !isSaving,
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre',
-                    hintText: 'Ingresa el nombre de la categoría',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'El nombre es requerido';
-                    }
-                    return null;
-                  },
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                enabled: !isSaving,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre',
+                  hintText: 'Ingresa el nombre de la categoría',
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _descriptionController,
-                  enabled: !isSaving,
-                  decoration: const InputDecoration(
-                    labelText: 'Descripción',
-                    hintText: 'Ingresa una descripción (opcional)',
-                  ),
-                  maxLines: 3,
+                validator: (value) => validator.validateName(value).fold(
+                      (failure) => failure.message,
+                      (_) => null,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
+                enabled: !isSaving,
+                decoration: const InputDecoration(
+                  labelText: 'Descripción',
+                  hintText: 'Ingresa una descripción (opcional)',
                 ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: _selectedTransactionTypeId,
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo de Transacción',
-                    hintText: 'Selecciona el tipo de transacción',
-                  ),
-                  items: transactionTypes.entries.map((entry) {
-                    return DropdownMenuItem(
-                      value: entry.value,
-                      child: Text(entry.key),
-                    );
-                  }).toList(),
-                  onChanged: isSaving
-                      ? null
-                      : (value) {
-                          setState(() {
-                            _selectedTransactionTypeId = value;
-                          });
-                        },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'El tipo de transacción es requerido';
-                    }
-                    return null;
-                  },
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedTransactionTypeId,
+                decoration: const InputDecoration(
+                  labelText: 'Tipo de Transacción',
+                  hintText: 'Selecciona el tipo de transacción',
                 ),
-                if (isEditing) ...[
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Text('Activo:'),
-                      const SizedBox(width: 8),
-                      Switch(
-                        value: _isActive,
-                        onChanged: isSaving
-                            ? null
-                            : (value) {
-                                setState(() {
-                                  _isActive = value;
-                                });
-                              },
-                      ),
-                    ],
+                items: const [
+                  DropdownMenuItem(
+                    value: 'INCOME',
+                    child: Text('Ingreso'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'EXPENSE',
+                    child: Text('Gasto'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'TRANSFER',
+                    child: Text('Transferencia'),
                   ),
                 ],
+                onChanged: isSaving
+                    ? null
+                    : (value) {
+                        setState(() {
+                          _selectedTransactionTypeId = value;
+                        });
+                      },
+                validator: (value) =>
+                    validator.validateTransactionType(value).fold(
+                          (failure) => failure.message,
+                          (_) => null,
+                        ),
+              ),
+              if (isEditing) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Text('Activo:'),
+                    const SizedBox(width: 8),
+                    Switch(
+                      value: _isActive,
+                      onChanged: isSaving
+                          ? null
+                          : (value) {
+                              setState(() {
+                                _isActive = value;
+                              });
+                            },
+                    ),
+                  ],
+                ),
               ],
-            ),
+            ],
           ),
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Text('Error: ${error.toString()}'),
         ),
       ),
       actions: [
         TextButton(
-          onPressed: isSaving ? null : () => Navigator.pop(context),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(
           onPressed: isSaving
               ? null
-              : () => transactionTypesAsync.whenOrNull(
-                    data: (transactionTypes) => _submit(transactionTypes),
-                  ),
-          child: isSaving
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                  ),
-                )
-              : Text(isEditing ? 'Guardar' : 'Crear'),
+              : () {
+                  Navigator.of(context).pop();
+                },
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          onPressed: isSaving ? null : _submit,
+          child: Text(isEditing ? 'Guardar' : 'Crear'),
         ),
       ],
     );
   }
 
-  void _submit(Map<String, String> transactionTypes) {
+  void _submit() {
     if (_formKey.currentState!.validate()) {
       final category = Category(
         id: widget.category?.id,

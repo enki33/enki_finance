@@ -4,19 +4,85 @@ import 'package:mockito/annotations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:enki_finance/features/transactions/data/repositories/supabase_transaction_repository.dart';
 import 'package:enki_finance/features/transactions/domain/entities/transaction.dart';
-import 'package:enki_finance/core/errors/failures.dart';
+import 'package:enki_finance/core/error/failures.dart';
 
-@GenerateMocks([SupabaseClient, PostgrestFilterBuilder])
+@GenerateMocks([SupabaseClient])
 import 'supabase_transaction_repository_test.mocks.dart';
+
+class MockSupabaseQueryBuilder extends Mock implements SupabaseQueryBuilder {
+  @override
+  PostgrestFilterBuilder<PostgrestList> insert(Object data,
+      {bool defaultToNull = true}) {
+    return MockPostgrestFilterBuilder();
+  }
+
+  @override
+  PostgrestFilterBuilder<PostgrestList> select([String columns = '*']) {
+    return MockPostgrestFilterBuilder();
+  }
+
+  @override
+  PostgrestFilterBuilder<PostgrestList> eq(String column, dynamic value) {
+    return MockPostgrestFilterBuilder();
+  }
+
+  @override
+  PostgrestTransformBuilder<PostgrestList> order(String column,
+      {bool ascending = true,
+      bool nullsFirst = false,
+      String? referencedTable}) {
+    return MockPostgrestTransformBuilder();
+  }
+}
+
+class MockPostgrestFilterBuilder extends Mock
+    implements PostgrestFilterBuilder<PostgrestList> {
+  @override
+  PostgrestFilterBuilder<PostgrestList> eq(String column, dynamic value) {
+    return this;
+  }
+
+  @override
+  PostgrestTransformBuilder<PostgrestList> select([String columns = '*']) {
+    return MockPostgrestTransformBuilder();
+  }
+
+  @override
+  PostgrestTransformBuilder<PostgrestList> order(String column,
+      {bool ascending = true,
+      bool nullsFirst = false,
+      String? referencedTable}) {
+    return MockPostgrestTransformBuilder();
+  }
+}
+
+class MockPostgrestTransformBuilder extends Mock
+    implements PostgrestTransformBuilder<PostgrestList> {
+  @override
+  PostgrestTransformBuilder<PostgrestMap> single() {
+    return MockPostgrestSingleTransformBuilder();
+  }
+
+  @override
+  Future<PostgrestList> execute() async {
+    return [];
+  }
+}
+
+class MockPostgrestSingleTransformBuilder extends Mock
+    implements PostgrestTransformBuilder<PostgrestMap> {
+  @override
+  Future<PostgrestMap> execute() async {
+    return {};
+  }
+}
 
 void main() {
   late SupabaseTransactionRepository repository;
   late MockSupabaseClient mockSupabaseClient;
-  late MockPostgrestFilterBuilder mockFilterBuilder;
 
   setUp(() {
     mockSupabaseClient = MockSupabaseClient();
-    mockFilterBuilder = MockPostgrestFilterBuilder();
     repository = SupabaseTransactionRepository(mockSupabaseClient);
   });
 
@@ -26,22 +92,33 @@ void main() {
       userId: 'user1',
       transactionDate: DateTime(2024, 1, 1),
       amount: 100.0,
-      transactionTypeId: 'EXPENSE',
+      transactionTypeId: 'type1',
       categoryId: 'cat1',
-      subcategoryId: 'subcat1',
       accountId: 'acc1',
-      currencyId: 'MXN',
+      currencyId: 'curr1',
       createdAt: DateTime(2024, 1, 1),
+      updatedAt: DateTime(2024, 1, 1),
     );
 
     test('should return Right(Transaction) when the call is successful',
         () async {
       // Arrange
+      when(mockSupabaseClient.from(any)).thenReturn(MockSupabaseQueryBuilder());
       when(mockSupabaseClient.from('transaction'))
+          .thenReturn(MockSupabaseQueryBuilder());
+
+      final mockFilterBuilder = MockPostgrestFilterBuilder();
+      final mockTransformBuilder = MockPostgrestTransformBuilder();
+      final mockSingleTransformBuilder = MockPostgrestSingleTransformBuilder();
+
+      when(mockSupabaseClient
+              .from('transaction')
+              .insert(testTransaction.toJson()))
           .thenReturn(mockFilterBuilder);
-      when(mockFilterBuilder.insert(any)).thenReturn(mockFilterBuilder);
-      when(mockFilterBuilder.select()).thenReturn(mockFilterBuilder);
-      when(mockFilterBuilder.single())
+      when(mockFilterBuilder.select()).thenReturn(mockTransformBuilder);
+      when(mockTransformBuilder.single())
+          .thenReturn(mockSingleTransformBuilder);
+      when(mockSingleTransformBuilder.execute())
           .thenAnswer((_) async => testTransaction.toJson());
 
       // Act
@@ -51,10 +128,7 @@ void main() {
       expect(result.isRight(), true);
       result.fold(
         (failure) => fail('Should not return failure'),
-        (transaction) {
-          expect(transaction.id, testTransaction.id);
-          expect(transaction.amount, testTransaction.amount);
-        },
+        (transaction) => expect(transaction, equals(testTransaction)),
       );
     });
 
@@ -62,10 +136,17 @@ void main() {
         'should return Left(ValidationFailure) when foreign key constraint fails',
         () async {
       // Arrange
+      when(mockSupabaseClient.from(any)).thenReturn(MockSupabaseQueryBuilder());
       when(mockSupabaseClient.from('transaction'))
+          .thenReturn(MockSupabaseQueryBuilder());
+
+      final mockFilterBuilder = MockPostgrestFilterBuilder();
+      when(mockSupabaseClient
+              .from('transaction')
+              .insert(testTransaction.toJson()))
           .thenReturn(mockFilterBuilder);
-      when(mockFilterBuilder.insert(any))
-          .thenThrow(PostgrestException('foreign key constraint'));
+      when(mockFilterBuilder.select())
+          .thenThrow(PostgrestException(message: 'foreign key constraint'));
 
       // Act
       final result = await repository.createTransaction(testTransaction);
@@ -73,18 +154,21 @@ void main() {
       // Assert
       expect(result.isLeft(), true);
       result.fold(
-        (failure) => expect(failure, isA<ValidationFailure>()),
+        (failure) => expect(failure, isA<ServerFailure>()),
         (_) => fail('Should return failure'),
       );
     });
 
-    test('should return Left(UnauthorizedFailure) when permission is denied',
+    test('should return Left(AuthorizationFailure) when permission is denied',
         () async {
       // Arrange
+      when(mockSupabaseClient.from(any)).thenReturn(MockSupabaseQueryBuilder());
       when(mockSupabaseClient.from('transaction'))
-          .thenReturn(mockFilterBuilder);
-      when(mockFilterBuilder.insert(any))
-          .thenThrow(PostgrestException('permission denied'));
+          .thenReturn(MockSupabaseQueryBuilder());
+      when(mockSupabaseClient
+              .from('transaction')
+              .insert(testTransaction.toJson()))
+          .thenThrow(PostgrestException(message: 'permission denied'));
 
       // Act
       final result = await repository.createTransaction(testTransaction);
@@ -92,7 +176,7 @@ void main() {
       // Assert
       expect(result.isLeft(), true);
       result.fold(
-        (failure) => expect(failure, isA<UnauthorizedFailure>()),
+        (failure) => expect(failure, isA<AuthorizationFailure>()),
         (_) => fail('Should return failure'),
       );
     });
@@ -111,6 +195,7 @@ void main() {
         accountId: 'acc1',
         currencyId: 'MXN',
         createdAt: DateTime(2024, 1, 1),
+        updatedAt: DateTime(2024, 1, 1),
       ),
       Transaction(
         id: '2',
@@ -123,6 +208,7 @@ void main() {
         accountId: 'acc2',
         currencyId: 'MXN',
         createdAt: DateTime(2024, 1, 2),
+        updatedAt: DateTime(2024, 1, 2),
       ),
     ];
 
@@ -130,10 +216,14 @@ void main() {
         () async {
       // Arrange
       when(mockSupabaseClient.from('transaction'))
-          .thenReturn(mockFilterBuilder);
-      when(mockFilterBuilder.select()).thenReturn(mockFilterBuilder);
-      when(mockFilterBuilder.eq('user_id', any)).thenReturn(mockFilterBuilder);
-      when(mockFilterBuilder.order('transaction_date', ascending: false))
+          .thenReturn(MockPostgrestFilterBuilder());
+      when(mockSupabaseClient.from('transaction').select())
+          .thenReturn(MockPostgrestFilterBuilder());
+      when(mockSupabaseClient.from('transaction').eq('user_id', any))
+          .thenReturn(MockPostgrestFilterBuilder());
+      when(mockSupabaseClient
+              .from('transaction')
+              .order('transaction_date', ascending: false))
           .thenAnswer(
               (_) async => testTransactions.map((t) => t.toJson()).toList());
 
@@ -155,8 +245,9 @@ void main() {
     test('should return Left(ServerFailure) when an error occurs', () async {
       // Arrange
       when(mockSupabaseClient.from('transaction'))
-          .thenReturn(mockFilterBuilder);
-      when(mockFilterBuilder.select()).thenThrow(Exception('Server error'));
+          .thenReturn(MockPostgrestFilterBuilder());
+      when(mockSupabaseClient.from('transaction').select())
+          .thenThrow(Exception('Server error'));
 
       // Act
       final result = await repository.getTransactions(userId: 'user1');

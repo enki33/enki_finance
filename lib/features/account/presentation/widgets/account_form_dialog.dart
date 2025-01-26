@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:enki_finance/features/auth/presentation/providers/auth_provider.dart';
 import 'package:enki_finance/features/account/domain/entities/account.dart';
 import 'package:enki_finance/features/account/presentation/providers/account_providers.dart';
+import 'package:enki_finance/core/providers/validator_providers.dart';
+import 'package:enki_finance/features/account/domain/validators/account_form_validator.dart';
+import '../providers/account_form_provider.dart';
 
 class AccountFormDialog extends ConsumerStatefulWidget {
   final Map<String, dynamic>? account;
@@ -45,6 +49,8 @@ class _AccountFormDialogState extends ConsumerState<AccountFormDialog> {
   @override
   Widget build(BuildContext context) {
     final isSaving = ref.watch(isSavingProvider);
+    final validator = ref.watch(accountFormValidatorProvider);
+    final amountValidator = ref.watch(amountValidatorProvider);
 
     return AlertDialog(
       title: Text(isEditing ? 'Editar Cuenta' : 'Nueva Cuenta'),
@@ -61,12 +67,7 @@ class _AccountFormDialogState extends ConsumerState<AccountFormDialog> {
                   border: OutlineInputBorder(),
                 ),
                 enabled: !isSaving,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'El nombre es requerido';
-                  }
-                  return null;
-                },
+                validator: (value) => validator.validateName(value),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -87,15 +88,11 @@ class _AccountFormDialogState extends ConsumerState<AccountFormDialog> {
                 ),
                 enabled: !isSaving,
                 keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'El balance inicial es requerido';
-                  }
-                  if (double.tryParse(value) == null) {
-                    return 'El balance inicial debe ser un número válido';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                    amountValidator.validateAmount(value).fold(
+                          (failure) => failure.message,
+                          (_) => null,
+                        ),
               ),
               if (isEditing) ...[
                 const SizedBox(height: 16),

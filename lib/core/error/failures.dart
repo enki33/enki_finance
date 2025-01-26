@@ -1,51 +1,43 @@
 import 'package:equatable/equatable.dart';
 
-abstract class Failure extends Equatable {
+abstract class Failure {
+  const Failure([this.message = '']);
+
   final String message;
-  final String? code;
-
-  const Failure({required this.message, this.code});
-
-  @override
-  List<Object?> get props => [message, code];
 }
 
 class ServerFailure extends Failure {
-  const ServerFailure({required String message, String? code})
-      : super(message: message, code: code);
+  const ServerFailure([String message = '']) : super(message);
 }
 
 class CacheFailure extends Failure {
-  const CacheFailure({required String message, String? code})
-      : super(message: message, code: code);
+  const CacheFailure([String message = '']) : super(message);
 }
 
 class NetworkFailure extends Failure {
-  const NetworkFailure({required String message, String? code})
-      : super(message: message, code: code);
+  const NetworkFailure([String message = '']) : super(message);
 }
 
 class ValidationFailure extends Failure {
-  const ValidationFailure({required String message, String? code})
-      : super(message: message, code: code);
+  const ValidationFailure([String message = '']) : super(message);
 }
 
-class UnauthorizedFailure extends Failure {
-  const UnauthorizedFailure({required String message, String? code})
-      : super(message: message, code: code);
+class AuthenticationFailure extends Failure {
+  const AuthenticationFailure([String message = '']) : super(message);
+}
+
+class AuthorizationFailure extends Failure {
+  const AuthorizationFailure([String message = '']) : super(message);
 }
 
 class NotFoundFailure extends Failure {
-  const NotFoundFailure({required String message, String? code})
-      : super(message: message, code: code);
+  const NotFoundFailure([String message = '']) : super(message);
 }
 
-class DatabaseFailure extends Failure {
-  const DatabaseFailure(String message)
-      : super(message: message, code: 'DATABASE_ERROR');
+class ConflictFailure extends Failure {
+  const ConflictFailure([String message = '']) : super(message);
 }
 
 class UnexpectedFailure extends Failure {
-  const UnexpectedFailure(String message)
-      : super(message: message, code: 'UNEXPECTED_ERROR');
+  const UnexpectedFailure([String message = '']) : super(message);
 }

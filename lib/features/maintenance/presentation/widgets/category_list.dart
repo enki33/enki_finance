@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:enki_finance/features/maintenance/domain/entities/category.dart';
-import 'package:enki_finance/features/maintenance/presentation/providers/maintenance_providers.dart';
-import 'package:enki_finance/features/maintenance/presentation/widgets/category_form_dialog.dart';
+import '../../domain/entities/category.dart';
+import '../providers/maintenance_providers.dart';
+import 'category_form_dialog.dart';
 
 class CategoryList extends ConsumerWidget {
-  const CategoryList({super.key});
+  final String userId;
+
+  const CategoryList({
+    super.key,
+    required this.userId,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final categoriesAsync = ref.watch(categoriesProvider);
+    final categoriesAsync = ref.watch(categoriesProvider(userId));
     final showActiveItems = ref.watch(showActiveItemsProvider);
 
     return Scaffold(
@@ -88,13 +93,13 @@ class CategoryList extends ConsumerWidget {
     if (category != null) {
       ref.read(isSavingProvider.notifier).state = true;
       try {
-        final repository = ref.read(maintenanceRepositoryProvider);
-        final result = await repository.createCategory(category);
+        final service = ref.read(categoryServiceProvider);
+        final result = await service.createCategory(category);
         result.fold(
           (failure) => ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error: ${failure.message}')),
           ),
-          (_) => ref.refresh(categoriesProvider),
+          (_) => ref.refresh(categoriesProvider(userId)),
         );
       } finally {
         ref.read(isSavingProvider.notifier).state = false;
@@ -112,13 +117,13 @@ class CategoryList extends ConsumerWidget {
     if (updatedCategory != null) {
       ref.read(isSavingProvider.notifier).state = true;
       try {
-        final repository = ref.read(maintenanceRepositoryProvider);
-        final result = await repository.updateCategory(updatedCategory);
+        final service = ref.read(categoryServiceProvider);
+        final result = await service.updateCategory(updatedCategory);
         result.fold(
           (failure) => ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error: ${failure.message}')),
           ),
-          (_) => ref.refresh(categoriesProvider),
+          (_) => ref.refresh(categoriesProvider(userId)),
         );
       } finally {
         ref.read(isSavingProvider.notifier).state = false;
@@ -154,13 +159,13 @@ class CategoryList extends ConsumerWidget {
     if (confirmed == true) {
       ref.read(isDeletingProvider.notifier).state = true;
       try {
-        final repository = ref.read(maintenanceRepositoryProvider);
-        final result = await repository.deleteCategory(category.id ?? '');
+        final service = ref.read(categoryServiceProvider);
+        final result = await service.deleteCategory(category.id ?? '');
         result.fold(
           (failure) => ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error: ${failure.message}')),
           ),
-          (_) => ref.refresh(categoriesProvider),
+          (_) => ref.refresh(categoriesProvider(userId)),
         );
       } finally {
         ref.read(isDeletingProvider.notifier).state = false;
