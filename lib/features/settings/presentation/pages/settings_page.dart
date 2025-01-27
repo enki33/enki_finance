@@ -28,9 +28,8 @@ class SettingsPage extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.person),
             title: const Text('Información Personal'),
-            onTap: () {
-              // TODO: Navigate to user profile
-            },
+            subtitle: const Text('Ver y editar información de usuario'),
+            onTap: () => context.go('/settings/user-info'),
           ),
           const Divider(),
 
@@ -50,7 +49,7 @@ class SettingsPage extends ConsumerWidget {
             leading: const Icon(Icons.category),
             title: const Text('Categorías y Subcategorías'),
             subtitle: const Text('Administrar categorías y subcategorías'),
-            onTap: () => context.go('/settings/maintenance'),
+            onTap: () => context.go('/settings/categories'),
           ),
           ListTile(
             leading: const Icon(Icons.account_balance),
@@ -81,23 +80,20 @@ class SettingsPage extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.notifications),
             title: const Text('Notificaciones'),
-            onTap: () {
-              // TODO: Navigate to notification settings
-            },
+            subtitle: const Text('Configurar notificaciones'),
+            onTap: () => context.go('/settings/notifications'),
           ),
           ListTile(
             leading: const Icon(Icons.color_lens),
             title: const Text('Tema'),
-            onTap: () {
-              // TODO: Navigate to theme settings
-            },
+            subtitle: const Text('Personalizar apariencia'),
+            onTap: () => context.go('/settings/theme'),
           ),
           ListTile(
             leading: const Icon(Icons.language),
             title: const Text('Idioma'),
-            onTap: () {
-              // TODO: Navigate to language settings
-            },
+            subtitle: const Text('Cambiar idioma'),
+            onTap: () => context.go('/settings/language'),
           ),
         ],
       ),

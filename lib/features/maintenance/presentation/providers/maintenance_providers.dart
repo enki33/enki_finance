@@ -86,11 +86,27 @@ final categoriesProvider =
     FutureProvider.family<List<Category>, String>((ref, userId) async {
   final repository = ref.watch(maintenanceRepositoryProvider);
   final getCategories = GetCategories(repository);
-  final result = await getCategories(userId);
-  return result.fold(
-    (failure) => throw failure,
-    (categories) => categories,
-  );
+  final showActiveItems = ref.watch(showActiveItemsProvider);
+
+  try {
+    final result = await getCategories(userId);
+    return result.fold(
+      (failure) {
+        debugPrint('Error fetching categories: ${failure.message}');
+        throw failure.message; // This will be caught by the error UI
+      },
+      (categories) {
+        // Filter active/inactive categories
+        return categories
+            .where((category) => category.isActive == showActiveItems)
+            .toList();
+      },
+    );
+  } catch (e, stack) {
+    debugPrint('Unexpected error fetching categories: $e');
+    debugPrint('Stack trace: $stack');
+    throw e.toString();
+  }
 });
 
 // Subcategories provider with search, filter and pagination

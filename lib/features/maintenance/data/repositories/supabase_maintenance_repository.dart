@@ -65,12 +65,11 @@ class SupabaseMaintenanceRepository implements MaintenanceRepository {
     bool? isActive,
   }) async {
     try {
-      var query = _client.from('category').select().eq('user_id', userId);
-      if (isActive != null) {
-        query = query.eq('is_active', isActive);
-      }
+      final query = _client.from('category').select();
+      final filteredQuery =
+          isActive != null ? query.eq('is_active', isActive) : query;
+      final data = await filteredQuery.order('name');
 
-      final data = await query;
       final categories = data
           .map((json) => CategoryModel.fromJson(json))
           .map((model) => model.toEntity())

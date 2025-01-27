@@ -68,8 +68,8 @@ class MainScreen extends HookConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            tooltip: 'Maintenance',
-            onPressed: () => context.go('/settings/maintenance'),
+            tooltip: 'Settings',
+            onPressed: () => context.go('/settings'),
           ),
           IconButton(
             icon: const Icon(Icons.logout),
