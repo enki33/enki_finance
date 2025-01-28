@@ -1,5 +1,6 @@
 import 'package:enki_finance/features/maintenance/domain/entities/category.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:uuid/uuid.dart';
 
 part 'category_model.freezed.dart';
 part 'category_model.g.dart';
@@ -32,7 +33,7 @@ class CategoryModel with _$CategoryModel {
       );
 
   Category toEntity() => Category(
-        id: id,
+        id: id ?? '',
         name: name,
         description: description,
         isActive: isActive,

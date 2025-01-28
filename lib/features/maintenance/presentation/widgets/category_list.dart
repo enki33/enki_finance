@@ -6,16 +6,20 @@ import 'category_form_dialog.dart';
 
 class CategoryList extends ConsumerWidget {
   final String userId;
+  final void Function(Category category)? onCategorySelected;
 
   const CategoryList({
     super.key,
     required this.userId,
+    this.onCategorySelected,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    print('DEBUG: Building CategoryList');
     final categoriesAsync = ref.watch(categoriesProvider(userId));
     final showActiveItems = ref.watch(showActiveItemsProvider);
+    final selectedCategory = ref.watch(selectedCategoryProvider);
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
@@ -41,38 +45,68 @@ class CategoryList extends ConsumerWidget {
           ),
           Expanded(
             child: categoriesAsync.when(
-              data: (categories) => ListView.builder(
-                itemCount: categories.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == categories.length) {
-                    return const SizedBox(height: 80);
-                  }
-                  final category = categories[index];
-                  return ListTile(
-                    title: Text(category.name),
-                    subtitle: Text(category.description ?? ''),
-                    trailing: PopupMenuButton(
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: Text('Editar'),
+              data: (categories) {
+                print('DEBUG: Loaded ${categories.length} categories');
+                return ListView.builder(
+                  itemCount: categories.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == categories.length) {
+                      return const SizedBox(height: 80);
+                    }
+                    final category = categories[index];
+                    final isSelected = selectedCategory?.id == category.id;
+
+                    return Material(
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : null,
+                      child: InkWell(
+                        onTap: () {
+                          print('DEBUG: Category tapped: ${category.id}');
+                          if (onCategorySelected != null) {
+                            print(
+                                'DEBUG: Calling onCategorySelected with category: ${category.name}');
+                            onCategorySelected!(category);
+                          }
+                        },
+                        child: ListTile(
+                          title: Text(
+                            category.name,
+                            style: isSelected
+                                ? TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onPrimaryContainer,
+                                    fontWeight: FontWeight.bold,
+                                  )
+                                : null,
+                          ),
+                          subtitle: Text(category.description ?? ''),
+                          trailing: PopupMenuButton(
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: 'edit',
+                                child: Text('Editar'),
+                              ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Text('Eliminar'),
+                              ),
+                            ],
+                            onSelected: (value) {
+                              if (value == 'edit') {
+                                _showEditDialog(context, ref, category);
+                              } else if (value == 'delete') {
+                                _showDeleteDialog(context, ref, category);
+                              }
+                            },
+                          ),
                         ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Text('Eliminar'),
-                        ),
-                      ],
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          _showEditDialog(context, ref, category);
-                        } else if (value == 'delete') {
-                          _showDeleteDialog(context, ref, category);
-                        }
-                      },
-                    ),
-                  );
-                },
-              ),
+                      ),
+                    );
+                  },
+                );
+              },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stack) => Center(
                 child: Column(

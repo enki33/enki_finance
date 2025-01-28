@@ -65,6 +65,7 @@ class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
                 decoration: const InputDecoration(
                   labelText: 'Nombre',
                   hintText: 'Ingresa el nombre de la subcategoría',
+                  isDense: true,
                 ),
                 validator: (value) => validator.validateName(value).fold(
                       (failure) => failure.message,
@@ -75,11 +76,13 @@ class _SubcategoryFormDialogState extends ConsumerState<SubcategoryFormDialog> {
               TextFormField(
                 controller: _descriptionController,
                 enabled: !isSaving,
+                minLines: 1,
+                maxLines: null,
                 decoration: const InputDecoration(
                   labelText: 'Descripción',
                   hintText: 'Ingresa una descripción (opcional)',
+                  isDense: true,
                 ),
-                maxLines: 3,
               ),
               const SizedBox(height: 16),
               jarsAsync.when(

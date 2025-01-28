@@ -6,7 +6,7 @@ part 'category.g.dart';
 @freezed
 class Category with _$Category {
   const factory Category({
-    String? id,
+    required String id,
     required String name,
     String? description,
     @Default(true) bool isActive,

@@ -113,14 +113,22 @@ final categoriesProvider =
 final subcategoriesProvider =
     FutureProvider.family<List<Subcategory>, String>((ref, categoryId) async {
   final service = ref.watch(subcategoryServiceProvider);
-  final showActiveItems = ref.watch(showActiveItemsProvider);
+  final showActiveItems = ref.watch(showActiveSubcategoriesProvider);
+  debugPrint(
+      'Fetching subcategories for categoryId: $categoryId, showActive: $showActiveItems');
   final result = await service.getSubcategories(
     categoryId: categoryId,
     isActive: showActiveItems,
   );
   return result.fold(
-    (failure) => throw failure,
-    (subcategories) => subcategories,
+    (failure) {
+      debugPrint('Error fetching subcategories: ${failure.message}');
+      throw failure;
+    },
+    (subcategories) {
+      debugPrint('Found ${subcategories.length} subcategories');
+      return subcategories;
+    },
   );
 });
 

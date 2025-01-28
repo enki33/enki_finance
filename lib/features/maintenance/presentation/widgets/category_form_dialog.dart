@@ -3,6 +3,7 @@ import 'package:enki_finance/features/maintenance/domain/validators/maintenance_
 import 'package:enki_finance/features/maintenance/presentation/providers/maintenance_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 class CategoryFormDialog extends ConsumerStatefulWidget {
   final Category? category;
@@ -188,7 +189,7 @@ class _CategoryFormDialogState extends ConsumerState<CategoryFormDialog> {
   void _submit() {
     if (_formKey.currentState!.validate()) {
       final category = Category(
-        id: widget.category?.id,
+        id: widget.category?.id ?? '',
         name: _nameController.text,
         description: _descriptionController.text.isEmpty
             ? null
