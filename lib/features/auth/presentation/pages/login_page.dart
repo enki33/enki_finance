@@ -5,7 +5,7 @@ import 'package:enki_finance/core/providers/validator_providers.dart';
 import '../providers/auth_provider.dart';
 import '../../domain/exceptions/auth_exception.dart';
 
-class LoginPage extends ConsumerWidget {
+class LoginPage extends HookConsumerWidget {
   const LoginPage({super.key});
 
   @override

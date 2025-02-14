@@ -2630,7 +2630,7 @@ CREATE FUNCTION realtime.send(payload jsonb, event text, topic text, private boo
 BEGIN
   BEGIN
     -- Set the topic configuration
-    SET LOCAL realtime.topic TO topic;
+    EXECUTE format('SET LOCAL realtime.topic TO %L', topic);
 
     -- Attempt to insert the message
     INSERT INTO realtime.messages (payload, event, topic, private, extension)
@@ -3917,6 +3917,20 @@ COMMENT ON TABLE public.financial_goal IS 'Metas financieras de ahorro e inversi
 
 
 --
+-- Name: foreign_keys; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.foreign_keys AS
+ SELECT pg_constraint.conrelid AS table_id,
+    pg_constraint.confrelid AS referenced_table_id,
+    pg_constraint.conname AS fk_name
+   FROM pg_constraint
+  WHERE (pg_constraint.contype = 'f'::"char");
+
+
+ALTER VIEW public.foreign_keys OWNER TO postgres;
+
+--
 -- Name: jar; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -5056,6 +5070,48 @@ COPY auth.audit_log_entries (instance_id, id, payload, created_at, ip_address) F
 00000000-0000-0000-0000-000000000000	a98162e2-1faa-4d01-93fb-b16422f4753a	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-27 23:26:00.669071+00	
 00000000-0000-0000-0000-000000000000	4a3e82c0-83e5-4483-bcd2-882f3ed4ea81	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 00:25:22.091414+00	
 00000000-0000-0000-0000-000000000000	62da304e-b163-480c-ae0e-81bd33718309	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 00:25:22.096047+00	
+00000000-0000-0000-0000-000000000000	d98425f9-3527-4df2-a294-feb9455a7c2f	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 01:25:47.617949+00	
+00000000-0000-0000-0000-000000000000	97097f6c-6ecf-4037-b3fd-44b88643b5ff	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 01:25:47.625257+00	
+00000000-0000-0000-0000-000000000000	af879543-577f-40d6-a876-ada2d0ffe820	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 03:51:22.394156+00	
+00000000-0000-0000-0000-000000000000	7e744a0c-6242-45ca-a82f-ff57c933ce14	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 03:51:22.399775+00	
+00000000-0000-0000-0000-000000000000	304ebe22-6e83-4fce-a26c-d0fe69b0fcd5	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 04:50:44.639819+00	
+00000000-0000-0000-0000-000000000000	6969aa57-7437-47dd-83b0-0acb328987e7	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 04:50:44.643374+00	
+00000000-0000-0000-0000-000000000000	6906ce85-38a6-409c-9494-1b250f213a0b	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 05:50:04.669136+00	
+00000000-0000-0000-0000-000000000000	69ebb4c7-d59f-4bf1-aa9f-1fecd9afdad2	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 05:50:04.671344+00	
+00000000-0000-0000-0000-000000000000	31503ea2-3768-4b9b-9412-4cad0f576b8f	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 06:49:24.772007+00	
+00000000-0000-0000-0000-000000000000	663bd6f5-c650-4ec1-a7af-2ee9530d14fb	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 06:49:24.781439+00	
+00000000-0000-0000-0000-000000000000	ad269ac6-bea9-42a4-852e-2535f6aa18ff	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 07:48:44.703063+00	
+00000000-0000-0000-0000-000000000000	2ca76f84-f3a1-4073-8301-a076ef0877b3	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 07:48:44.707009+00	
+00000000-0000-0000-0000-000000000000	b333628e-d0c2-41f6-b928-4bf60e611181	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 08:48:04.50375+00	
+00000000-0000-0000-0000-000000000000	74f63df4-0671-4154-959f-d4ddbf602633	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 08:48:04.50604+00	
+00000000-0000-0000-0000-000000000000	20ddac5e-05e2-4c4a-af34-2551ed306aa0	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 09:47:24.425664+00	
+00000000-0000-0000-0000-000000000000	7b0df8b8-44e7-47f5-8438-21b9d7dbc7a7	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 09:47:24.426521+00	
+00000000-0000-0000-0000-000000000000	f1dad9df-702a-47a1-a6f0-52506782e077	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 10:46:44.386971+00	
+00000000-0000-0000-0000-000000000000	75d02b64-eb82-40f5-92b8-2f921cb78feb	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 10:46:44.390415+00	
+00000000-0000-0000-0000-000000000000	89137540-84be-4d9d-add7-ea2cde94a44d	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 11:46:12.762273+00	
+00000000-0000-0000-0000-000000000000	6d6a2edd-7320-4cf6-8a93-7af9ad9cafd9	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 11:46:12.764813+00	
+00000000-0000-0000-0000-000000000000	c23b489a-61b6-4812-8148-d9239f8d511a	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 12:45:32.967045+00	
+00000000-0000-0000-0000-000000000000	f36b1ab7-2acc-42c7-9a9e-8cda76c5e2bd	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 12:45:32.96867+00	
+00000000-0000-0000-0000-000000000000	5ccab2dd-c760-42d2-a172-50b7c26bd27f	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 13:44:52.695199+00	
+00000000-0000-0000-0000-000000000000	4011fe55-213b-4593-afd7-8b1a565f4d09	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 13:44:52.697744+00	
+00000000-0000-0000-0000-000000000000	ddf6caf5-a018-45fc-aab8-123d6a7ffb69	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 14:44:12.725838+00	
+00000000-0000-0000-0000-000000000000	68361cf4-c71c-4d88-8777-33d2c73d7727	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 14:44:12.728005+00	
+00000000-0000-0000-0000-000000000000	cf28ad58-da24-4766-8a54-8339fd4c815f	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 15:43:32.635754+00	
+00000000-0000-0000-0000-000000000000	2013df36-de41-4564-8a5e-aa6afb138434	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 15:43:32.637917+00	
+00000000-0000-0000-0000-000000000000	cfe9d064-7bf8-47fd-ba99-22cf5855ecf5	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 16:42:52.540915+00	
+00000000-0000-0000-0000-000000000000	4923281a-b6e0-47f0-943b-35769c4054be	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 16:42:52.543692+00	
+00000000-0000-0000-0000-000000000000	e683730c-832d-4790-81f6-8eb932bfdffc	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 17:42:12.581862+00	
+00000000-0000-0000-0000-000000000000	2de7317e-5ea4-4774-a246-b8438745a37a	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 17:42:12.583453+00	
+00000000-0000-0000-0000-000000000000	269a1599-ddb5-4500-a904-700f5de5802f	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 18:41:32.481621+00	
+00000000-0000-0000-0000-000000000000	a6c3baac-ee43-4c58-889f-d191cedb8407	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 18:41:32.483379+00	
+00000000-0000-0000-0000-000000000000	bb756cba-96da-4b83-9106-4d43447b33da	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 19:40:52.499122+00	
+00000000-0000-0000-0000-000000000000	2bddeacc-5326-4210-a7c4-f2eef18704db	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 19:40:52.50051+00	
+00000000-0000-0000-0000-000000000000	a18c1666-827c-48a4-8bc0-1d40d093d7e9	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 20:40:12.375861+00	
+00000000-0000-0000-0000-000000000000	5bba0d3c-d49e-4829-b5bc-d4e8cdf9b24d	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 20:40:12.377649+00	
+00000000-0000-0000-0000-000000000000	cbc98de4-da69-473f-9c1e-1658f15a4d3b	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 21:39:32.286106+00	
+00000000-0000-0000-0000-000000000000	3d6506f9-c6df-4a09-b1e7-992635c86ef0	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 21:39:32.287669+00	
+00000000-0000-0000-0000-000000000000	96bf8d71-c4bd-4d26-add0-a1ac8755ed8b	{"action":"token_refreshed","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 22:38:52.197511+00	
+00000000-0000-0000-0000-000000000000	dffc225d-7f86-4ecc-83ee-0d696e48541b	{"action":"token_revoked","actor_id":"8fd89363-cdda-45b8-b662-cab6d44e2bca","actor_username":"enki@adastra.lat","actor_via_sso":false,"log_type":"token"}	2025-01-28 22:38:52.199757+00	
 \.
 
 
@@ -5326,23 +5382,44 @@ COPY auth.refresh_tokens (instance_id, id, token, user_id, revoked, created_at, 
 00000000-0000-0000-0000-000000000000	234	VrgLDYGDiNxDRL2G6Bai5g	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-26 07:46:17.056679+00	2025-01-27 00:38:52.297038+00	y8hJ0Ez584FnihkiZLc3FA	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	258	xqk1Zg694DpvWv96P-ul1Q	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 23:26:00.672923+00	2025-01-28 00:25:22.096545+00	Ml-kE6JtVIQMqFYp4Rpo9g	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	235	ztEG0Tb76sRCkfX390Bd1Q	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 00:38:52.314162+00	2025-01-27 01:38:16.300269+00	VrgLDYGDiNxDRL2G6Bai5g	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
-00000000-0000-0000-0000-000000000000	259	RWc8Pfk6Y2_XT-D1HPT-lA	8fd89363-cdda-45b8-b662-cab6d44e2bca	f	2025-01-28 00:25:22.103207+00	2025-01-28 00:25:22.103207+00	xqk1Zg694DpvWv96P-ul1Q	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	236	3KcilPu4kU9OuizS8F9MAw	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 01:38:16.303314+00	2025-01-27 02:37:43.990277+00	ztEG0Tb76sRCkfX390Bd1Q	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	259	RWc8Pfk6Y2_XT-D1HPT-lA	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 00:25:22.103207+00	2025-01-28 01:25:47.625798+00	xqk1Zg694DpvWv96P-ul1Q	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	237	7lDexAcZHHbZCLmXmDv_qQ	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 02:37:43.992234+00	2025-01-27 03:37:08.559575+00	3KcilPu4kU9OuizS8F9MAw	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	238	aRYJb9uPZ3Oio8uNemzXgA	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 03:37:08.560188+00	2025-01-27 04:38:34.030581+00	7lDexAcZHHbZCLmXmDv_qQ	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	260	Y-PkKywMsvei3hiTqrwInQ	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 01:25:47.630704+00	2025-01-28 03:51:22.400288+00	RWc8Pfk6Y2_XT-D1HPT-lA	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	239	86ShQhlBvMGvmfvfBC5ifA	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 04:38:34.036673+00	2025-01-27 05:38:01.536074+00	aRYJb9uPZ3Oio8uNemzXgA	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	240	7h5J4ds1H4Kv_0IKF-uCjg	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 05:38:01.538565+00	2025-01-27 06:37:21.500332+00	86ShQhlBvMGvmfvfBC5ifA	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	261	Kt9Fnz8FhdKeeAdObWppwA	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 03:51:22.404107+00	2025-01-28 04:50:44.643851+00	Y-PkKywMsvei3hiTqrwInQ	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	241	KNZ3J38aX9rbGzQzqeHxBg	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 06:37:21.50237+00	2025-01-27 07:36:41.563422+00	7h5J4ds1H4Kv_0IKF-uCjg	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	242	I05KuooErskOYWhvvgm_tA	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 07:36:41.566707+00	2025-01-27 08:36:01.412355+00	KNZ3J38aX9rbGzQzqeHxBg	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	262	q1J6Eq-Cfo_T9lGYNsh7ew	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 04:50:44.649105+00	2025-01-28 05:50:04.671851+00	Kt9Fnz8FhdKeeAdObWppwA	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	243	Dyqt3p23qim9sRMoru4QGg	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 08:36:01.414526+00	2025-01-27 09:35:21.284548+00	I05KuooErskOYWhvvgm_tA	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	244	Whomlt6zPXfSD0JykdwZRg	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 09:35:21.286704+00	2025-01-27 10:34:41.407299+00	Dyqt3p23qim9sRMoru4QGg	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	263	g4lKl7ye0DuWsAR4dKox_A	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 05:50:04.676114+00	2025-01-28 06:49:24.782684+00	q1J6Eq-Cfo_T9lGYNsh7ew	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	245	jiZ5-6zDrHXHlMfAXmAl_g	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 10:34:41.414288+00	2025-01-27 11:34:01.570423+00	Whomlt6zPXfSD0JykdwZRg	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	246	tA14j1ZFTMMY9VnLE7eWGQ	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 11:34:01.575733+00	2025-01-27 12:33:21.154042+00	jiZ5-6zDrHXHlMfAXmAl_g	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	264	vPI3O8t8vArCDb1aRqSrnA	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 06:49:24.79195+00	2025-01-28 07:48:44.708084+00	g4lKl7ye0DuWsAR4dKox_A	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	247	UhmuEPwpKNITZrtjuaHjDA	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 12:33:21.159935+00	2025-01-27 13:32:41.102022+00	tA14j1ZFTMMY9VnLE7eWGQ	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	248	aQM9Zay4_YepfMweaDunAA	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 13:32:41.10578+00	2025-01-27 14:32:01.107194+00	UhmuEPwpKNITZrtjuaHjDA	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	265	-v8I_xh9d4UPEhNE_yrxig	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 07:48:44.71254+00	2025-01-28 08:48:04.506591+00	vPI3O8t8vArCDb1aRqSrnA	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	249	pilMpOaNNLI1J_2Hitvy9g	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 14:32:01.115234+00	2025-01-27 15:31:21.086663+00	aQM9Zay4_YepfMweaDunAA	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	250	6VYyvOMXoQFlgKJZtcezHA	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 15:31:21.090368+00	2025-01-27 16:30:41.386227+00	pilMpOaNNLI1J_2Hitvy9g	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	266	8W-ctSoTv1u69KOruLWqHw	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 08:48:04.509707+00	2025-01-28 09:47:24.428298+00	-v8I_xh9d4UPEhNE_yrxig	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 00000000-0000-0000-0000-000000000000	251	2nH1kG2zVHVzeRSqHky7qw	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-27 16:30:41.390917+00	2025-01-27 17:30:00.951657+00	6VYyvOMXoQFlgKJZtcezHA	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	267	cZ4qi0TCEoXsXrWZx6NmDg	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 09:47:24.430189+00	2025-01-28 10:46:44.393587+00	8W-ctSoTv1u69KOruLWqHw	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	268	jyHXRZan42xD8Ax0ZZhBvg	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 10:46:44.400177+00	2025-01-28 11:46:12.765336+00	cZ4qi0TCEoXsXrWZx6NmDg	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	269	5eOjGXGkPDF8Coo7wM-lYA	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 11:46:12.76812+00	2025-01-28 12:45:32.969202+00	jyHXRZan42xD8Ax0ZZhBvg	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	270	tG8a8SXFKLRMg-rcrOUM_Q	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 12:45:32.971155+00	2025-01-28 13:44:52.698264+00	5eOjGXGkPDF8Coo7wM-lYA	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	271	qmnwSe5oSRoF7otP1PBpJQ	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 13:44:52.70227+00	2025-01-28 14:44:12.729119+00	tG8a8SXFKLRMg-rcrOUM_Q	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	272	FRR-ghmPx1aNB7-cKEJsGg	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 14:44:12.731665+00	2025-01-28 15:43:32.639743+00	qmnwSe5oSRoF7otP1PBpJQ	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	273	t_TtmwI7ahmdZ08BQMmo1g	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 15:43:32.643577+00	2025-01-28 16:42:52.544256+00	FRR-ghmPx1aNB7-cKEJsGg	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	274	9t7gx6WvYniueJN-_P3gJA	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 16:42:52.54623+00	2025-01-28 17:42:12.584683+00	t_TtmwI7ahmdZ08BQMmo1g	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	275	-2bDipW3Cp-9k6suGnCtyA	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 17:42:12.587883+00	2025-01-28 18:41:32.484393+00	9t7gx6WvYniueJN-_P3gJA	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	276	HOEZGJD-TbZ6SrX4QH-OQg	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 18:41:32.487377+00	2025-01-28 19:40:52.501861+00	-2bDipW3Cp-9k6suGnCtyA	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	277	X_PIjeUJglRPfUyf67Xfzg	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 19:40:52.5041+00	2025-01-28 20:40:12.378206+00	HOEZGJD-TbZ6SrX4QH-OQg	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	278	Xf2tgV0gwEdJtCkwNI9rfw	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 20:40:12.379389+00	2025-01-28 21:39:32.288868+00	X_PIjeUJglRPfUyf67Xfzg	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	279	aPDndcBH9o6f8Pvu2YKrpA	8fd89363-cdda-45b8-b662-cab6d44e2bca	t	2025-01-28 21:39:32.290819+00	2025-01-28 22:38:52.200301+00	Xf2tgV0gwEdJtCkwNI9rfw	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
+00000000-0000-0000-0000-000000000000	280	g2PxVhK2gnZeBLhQ4fFraw	8fd89363-cdda-45b8-b662-cab6d44e2bca	f	2025-01-28 22:38:52.202703+00	2025-01-28 22:38:52.202703+00	aPDndcBH9o6f8Pvu2YKrpA	c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9
 \.
 
 
@@ -5436,9 +5513,9 @@ COPY auth.schema_migrations (version) FROM stdin;
 --
 
 COPY auth.sessions (id, user_id, created_at, updated_at, factor_id, aal, not_after, refreshed_at, user_agent, ip, tag) FROM stdin;
-c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9	8fd89363-cdda-45b8-b662-cab6d44e2bca	2025-01-12 04:52:39.814513+00	2025-01-28 00:25:22.112555+00	\N	aal1	\N	2025-01-28 00:25:22.112485	Dart/3.6 (dart:io)	187.190.229.78	\N
 97c781b8-e340-485c-8d73-9951e35dd5c6	8fd89363-cdda-45b8-b662-cab6d44e2bca	2025-01-16 04:28:43.534065+00	2025-01-16 04:28:43.534065+00	\N	aal1	\N	\N	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36	187.190.229.78	\N
 7732f5a5-cd4c-463b-891f-4ad60bff531b	8fd89363-cdda-45b8-b662-cab6d44e2bca	2025-01-16 04:38:35.69829+00	2025-01-16 04:38:35.69829+00	\N	aal1	\N	\N	Dart/3.6 (dart:io)	187.190.229.78	\N
+c2c7b4ae-e6ea-4378-aae4-ae2b85d902c9	8fd89363-cdda-45b8-b662-cab6d44e2bca	2025-01-12 04:52:39.814513+00	2025-01-28 22:38:52.205006+00	\N	aal1	\N	2025-01-28 22:38:52.204935	Dart/3.6 (dart:io)	187.190.229.78	\N
 \.
 
 
@@ -5463,7 +5540,7 @@ COPY auth.sso_providers (id, resource_id, created_at, updated_at) FROM stdin;
 --
 
 COPY auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, invited_at, confirmation_token, confirmation_sent_at, recovery_token, recovery_sent_at, email_change_token_new, email_change, email_change_sent_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data, is_super_admin, created_at, updated_at, phone, phone_confirmed_at, phone_change, phone_change_token, phone_change_sent_at, email_change_token_current, email_change_confirm_status, banned_until, reauthentication_token, reauthentication_sent_at, is_sso_user, deleted_at, is_anonymous) FROM stdin;
-00000000-0000-0000-0000-000000000000	8fd89363-cdda-45b8-b662-cab6d44e2bca	authenticated	authenticated	enki@adastra.lat	$2a$06$.mJuK4zPL.Y7B28pZ4CGSO5d7vz5bK4uM/vXCOxeHq1cUGH9izrM.	2025-01-11 00:48:59.995122+00	\N		\N		2025-01-16 04:28:32.938835+00			\N	2025-01-16 04:38:35.698216+00	{"provider": "email", "providers": ["email"]}	{"sub": "8fd89363-cdda-45b8-b662-cab6d44e2bca", "email": "enki@adastra.lat", "last_name": "Rodríguez Sámano ", "first_name": "Christian J", "email_verified": true, "phone_verified": false}	\N	2025-01-11 00:48:59.933198+00	2025-01-28 00:25:22.105635+00	\N	\N			\N		0	\N		\N	f	\N	f
+00000000-0000-0000-0000-000000000000	8fd89363-cdda-45b8-b662-cab6d44e2bca	authenticated	authenticated	enki@adastra.lat	$2a$06$0sUV2i73.QTJ.6gKYjbV1.hRnIYWOo2429h60SdEKNppVBkVzVvcq	2025-01-11 00:48:59.995122+00	\N		\N		2025-01-16 04:28:32.938835+00			\N	2025-01-16 04:38:35.698216+00	{"provider": "email", "providers": ["email"]}	{"sub": "8fd89363-cdda-45b8-b662-cab6d44e2bca", "email": "enki@adastra.lat", "last_name": "Rodríguez Sámano ", "first_name": "Christian J", "email_verified": true, "phone_verified": false}	\N	2025-01-11 00:48:59.933198+00	2025-01-28 22:38:52.203812+00	\N	\N			\N		0	\N		\N	f	\N	f
 \.
 
 
@@ -5541,8 +5618,57 @@ COPY cron.job_run_details (jobid, runid, job_pid, database, username, command, s
 5	54	500777	postgres	postgres	\r\n    SELECT public.notify_credit_card_events();\r\n    	succeeded	1 row	2025-01-26 08:00:00.131707+00	2025-01-26 08:00:00.145893+00
 4	53	496008	postgres	postgres	\r\n    SELECT public.update_installment_purchases();\r\n    	succeeded	1 row	2025-01-26 02:00:00.018449+00	2025-01-26 02:00:00.023422+00
 3	56	514608	postgres	postgres	\r\n    DO \r\n    $do$\r\n    DECLARE\r\n        v_record record;\r\n    BEGIN\r\n        FOR v_record IN \r\n            SELECT cc.id\r\n            FROM public.credit_card_details cc\r\n            WHERE public.calculate_next_cut_off_date(cc.cut_off_day) = CURRENT_DATE\r\n        LOOP\r\n            PERFORM public.generate_credit_card_statement(v_record.id);\r\n        END LOOP;\r\n    END\r\n    $do$;\r\n    	succeeded	DO	2025-01-27 01:00:00.209169+00	2025-01-27 01:00:00.212545+00
+4	73	592527	postgres	postgres	\r\n    SELECT public.update_installment_purchases();\r\n    	succeeded	1 row	2025-01-31 02:00:00.019571+00	2025-01-31 02:00:00.025619+00
+2	80	630584	postgres	postgres	\r\n    SELECT public.process_recurring_transactions();\r\n    	succeeded	1 row	2025-02-02 01:00:00.20004+00	2025-02-02 01:00:00.22209+00
 4	57	515388	postgres	postgres	\r\n    SELECT public.update_installment_purchases();\r\n    	succeeded	1 row	2025-01-27 02:00:00.018342+00	2025-01-27 02:00:00.021438+00
+3	68	572331	postgres	postgres	\r\n    DO \r\n    $do$\r\n    DECLARE\r\n        v_record record;\r\n    BEGIN\r\n        FOR v_record IN \r\n            SELECT cc.id\r\n            FROM public.credit_card_details cc\r\n            WHERE public.calculate_next_cut_off_date(cc.cut_off_day) = CURRENT_DATE\r\n        LOOP\r\n            PERFORM public.generate_credit_card_statement(v_record.id);\r\n        END LOOP;\r\n    END\r\n    $do$;\r\n    	succeeded	DO	2025-01-30 01:00:00.190596+00	2025-01-30 01:00:00.204093+00
+3	64	553143	postgres	postgres	\r\n    DO \r\n    $do$\r\n    DECLARE\r\n        v_record record;\r\n    BEGIN\r\n        FOR v_record IN \r\n            SELECT cc.id\r\n            FROM public.credit_card_details cc\r\n            WHERE public.calculate_next_cut_off_date(cc.cut_off_day) = CURRENT_DATE\r\n        LOOP\r\n            PERFORM public.generate_credit_card_statement(v_record.id);\r\n        END LOOP;\r\n    END\r\n    $do$;\r\n    	succeeded	DO	2025-01-29 01:00:00.165495+00	2025-01-29 01:00:00.16752+00
 5	58	520297	postgres	postgres	\r\n    SELECT public.notify_credit_card_events();\r\n    	succeeded	1 row	2025-01-27 08:00:00.153472+00	2025-01-27 08:00:00.179959+00
+2	63	553142	postgres	postgres	\r\n    SELECT public.process_recurring_transactions();\r\n    	succeeded	1 row	2025-01-29 01:00:00.162165+00	2025-01-29 01:00:00.176406+00
+2	67	572330	postgres	postgres	\r\n    SELECT public.process_recurring_transactions();\r\n    	succeeded	1 row	2025-01-30 01:00:00.189434+00	2025-01-30 01:00:00.233521+00
+4	65	554014	postgres	postgres	\r\n    SELECT public.update_installment_purchases();\r\n    	succeeded	1 row	2025-01-29 02:00:00.052151+00	2025-01-29 02:00:00.055367+00
+3	60	533854	postgres	postgres	\r\n    DO \r\n    $do$\r\n    DECLARE\r\n        v_record record;\r\n    BEGIN\r\n        FOR v_record IN \r\n            SELECT cc.id\r\n            FROM public.credit_card_details cc\r\n            WHERE public.calculate_next_cut_off_date(cc.cut_off_day) = CURRENT_DATE\r\n        LOOP\r\n            PERFORM public.generate_credit_card_statement(v_record.id);\r\n        END LOOP;\r\n    END\r\n    $do$;\r\n    	succeeded	DO	2025-01-28 01:00:00.204602+00	2025-01-28 01:00:00.207802+00
+2	59	533853	postgres	postgres	\r\n    SELECT public.process_recurring_transactions();\r\n    	succeeded	1 row	2025-01-28 01:00:00.201137+00	2025-01-28 01:00:00.213247+00
+3	72	591740	postgres	postgres	\r\n    DO \r\n    $do$\r\n    DECLARE\r\n        v_record record;\r\n    BEGIN\r\n        FOR v_record IN \r\n            SELECT cc.id\r\n            FROM public.credit_card_details cc\r\n            WHERE public.calculate_next_cut_off_date(cc.cut_off_day) = CURRENT_DATE\r\n        LOOP\r\n            PERFORM public.generate_credit_card_statement(v_record.id);\r\n        END LOOP;\r\n    END\r\n    $do$;\r\n    	succeeded	DO	2025-01-31 01:00:00.140858+00	2025-01-31 01:00:00.181866+00
+2	71	591739	postgres	postgres	\r\n    SELECT public.process_recurring_transactions();\r\n    	succeeded	1 row	2025-01-31 01:00:00.133372+00	2025-01-31 01:00:00.236844+00
+4	61	534676	postgres	postgres	\r\n    SELECT public.update_installment_purchases();\r\n    	succeeded	1 row	2025-01-28 02:00:00.026884+00	2025-01-28 02:00:00.030107+00
+4	69	573103	postgres	postgres	\r\n    SELECT public.update_installment_purchases();\r\n    	succeeded	1 row	2025-01-30 02:00:00.018211+00	2025-01-30 02:00:00.023209+00
+5	66	559113	postgres	postgres	\r\n    SELECT public.notify_credit_card_events();\r\n    	succeeded	1 row	2025-01-29 08:00:00.146196+00	2025-01-29 08:00:00.191047+00
+5	62	539950	postgres	postgres	\r\n    SELECT public.notify_credit_card_events();\r\n    	succeeded	1 row	2025-01-28 08:00:00.168003+00	2025-01-28 08:00:00.191211+00
+5	74	597867	postgres	postgres	\r\n    SELECT public.notify_credit_card_events();\r\n    	succeeded	1 row	2025-01-31 08:00:00.190949+00	2025-01-31 08:00:00.225752+00
+4	78	612334	postgres	postgres	\r\n    SELECT public.update_installment_purchases();\r\n    	succeeded	1 row	2025-02-01 02:00:00.033282+00	2025-02-01 02:00:00.047233+00
+3	77	611198	postgres	postgres	\r\n    DO \r\n    $do$\r\n    DECLARE\r\n        v_record record;\r\n    BEGIN\r\n        FOR v_record IN \r\n            SELECT cc.id\r\n            FROM public.credit_card_details cc\r\n            WHERE public.calculate_next_cut_off_date(cc.cut_off_day) = CURRENT_DATE\r\n        LOOP\r\n            PERFORM public.generate_credit_card_statement(v_record.id);\r\n        END LOOP;\r\n    END\r\n    $do$;\r\n    	succeeded	DO	2025-02-01 01:00:00.034272+00	2025-02-01 01:00:00.046219+00
+5	70	577883	postgres	postgres	\r\n    SELECT public.notify_credit_card_events();\r\n    	succeeded	1 row	2025-01-30 08:00:00.044635+00	2025-01-30 08:00:00.061613+00
+2	76	611197	postgres	postgres	\r\n    SELECT public.process_recurring_transactions();\r\n    	succeeded	1 row	2025-02-01 01:00:00.031428+00	2025-02-01 01:00:00.074873+00
+1	75	610412	postgres	postgres	\r\n    SELECT public.archive_completed_goals(30);\r\n    	succeeded	1 row	2025-02-01 00:00:00.169555+00	2025-02-01 00:00:00.234179+00
+3	81	630585	postgres	postgres	\r\n    DO \r\n    $do$\r\n    DECLARE\r\n        v_record record;\r\n    BEGIN\r\n        FOR v_record IN \r\n            SELECT cc.id\r\n            FROM public.credit_card_details cc\r\n            WHERE public.calculate_next_cut_off_date(cc.cut_off_day) = CURRENT_DATE\r\n        LOOP\r\n            PERFORM public.generate_credit_card_statement(v_record.id);\r\n        END LOOP;\r\n    END\r\n    $do$;\r\n    	succeeded	DO	2025-02-02 01:00:00.198976+00	2025-02-02 01:00:00.204253+00
+5	79	617182	postgres	postgres	\r\n    SELECT public.notify_credit_card_events();\r\n    	succeeded	1 row	2025-02-01 08:00:00.05629+00	2025-02-01 08:00:00.070165+00
+5	83	636220	postgres	postgres	\r\n    SELECT public.notify_credit_card_events();\r\n    	succeeded	1 row	2025-02-02 08:00:00.051134+00	2025-02-02 08:00:00.067121+00
+4	82	631374	postgres	postgres	\r\n    SELECT public.update_installment_purchases();\r\n    	succeeded	1 row	2025-02-02 02:00:00.020359+00	2025-02-02 02:00:00.024929+00
+2	84	649947	postgres	postgres	\r\n    SELECT public.process_recurring_transactions();\r\n    	succeeded	1 row	2025-02-03 01:00:00.130633+00	2025-02-03 01:00:00.249478+00
+3	85	649948	postgres	postgres	\r\n    DO \r\n    $do$\r\n    DECLARE\r\n        v_record record;\r\n    BEGIN\r\n        FOR v_record IN \r\n            SELECT cc.id\r\n            FROM public.credit_card_details cc\r\n            WHERE public.calculate_next_cut_off_date(cc.cut_off_day) = CURRENT_DATE\r\n        LOOP\r\n            PERFORM public.generate_credit_card_statement(v_record.id);\r\n        END LOOP;\r\n    END\r\n    $do$;\r\n    	succeeded	DO	2025-02-03 01:00:00.132781+00	2025-02-03 01:00:00.189869+00
+4	102	728803	postgres	postgres	\r\n    SELECT public.update_installment_purchases();\r\n    	succeeded	1 row	2025-02-07 02:00:00.143858+00	2025-02-07 02:00:00.176941+00
+4	86	650735	postgres	postgres	\r\n    SELECT public.update_installment_purchases();\r\n    	succeeded	1 row	2025-02-03 02:00:00.019073+00	2025-02-03 02:00:00.027559+00
+3	105	747775	postgres	postgres	\r\n    DO \r\n    $do$\r\n    DECLARE\r\n        v_record record;\r\n    BEGIN\r\n        FOR v_record IN \r\n            SELECT cc.id\r\n            FROM public.credit_card_details cc\r\n            WHERE public.calculate_next_cut_off_date(cc.cut_off_day) = CURRENT_DATE\r\n        LOOP\r\n            PERFORM public.generate_credit_card_statement(v_record.id);\r\n        END LOOP;\r\n    END\r\n    $do$;\r\n    	succeeded	DO	2025-02-08 01:00:00.215641+00	2025-02-08 01:00:00.230463+00
+3	97	708201	postgres	postgres	\r\n    DO \r\n    $do$\r\n    DECLARE\r\n        v_record record;\r\n    BEGIN\r\n        FOR v_record IN \r\n            SELECT cc.id\r\n            FROM public.credit_card_details cc\r\n            WHERE public.calculate_next_cut_off_date(cc.cut_off_day) = CURRENT_DATE\r\n        LOOP\r\n            PERFORM public.generate_credit_card_statement(v_record.id);\r\n        END LOOP;\r\n    END\r\n    $do$;\r\n    	succeeded	DO	2025-02-06 01:00:00.241528+00	2025-02-06 01:00:00.272806+00
+3	93	688979	postgres	postgres	\r\n    DO \r\n    $do$\r\n    DECLARE\r\n        v_record record;\r\n    BEGIN\r\n        FOR v_record IN \r\n            SELECT cc.id\r\n            FROM public.credit_card_details cc\r\n            WHERE public.calculate_next_cut_off_date(cc.cut_off_day) = CURRENT_DATE\r\n        LOOP\r\n            PERFORM public.generate_credit_card_statement(v_record.id);\r\n        END LOOP;\r\n    END\r\n    $do$;\r\n    	succeeded	DO	2025-02-05 01:00:00.191163+00	2025-02-05 01:00:00.197467+00
+5	87	655598	postgres	postgres	\r\n    SELECT public.notify_credit_card_events();\r\n    	succeeded	1 row	2025-02-03 08:00:00.063804+00	2025-02-03 08:00:00.073885+00
+2	92	688978	postgres	postgres	\r\n    SELECT public.process_recurring_transactions();\r\n    	succeeded	1 row	2025-02-05 01:00:00.189073+00	2025-02-05 01:00:00.207281+00
+2	96	708200	postgres	postgres	\r\n    SELECT public.process_recurring_transactions();\r\n    	succeeded	1 row	2025-02-06 01:00:00.240421+00	2025-02-06 01:00:00.305502+00
+2	104	747774	postgres	postgres	\r\n    SELECT public.process_recurring_transactions();\r\n    	succeeded	1 row	2025-02-08 01:00:00.213493+00	2025-02-08 01:00:00.26039+00
+4	94	689750	postgres	postgres	\r\n    SELECT public.update_installment_purchases();\r\n    	succeeded	1 row	2025-02-05 02:00:00.016706+00	2025-02-05 02:00:00.019788+00
+3	89	669304	postgres	postgres	\r\n    DO \r\n    $do$\r\n    DECLARE\r\n        v_record record;\r\n    BEGIN\r\n        FOR v_record IN \r\n            SELECT cc.id\r\n            FROM public.credit_card_details cc\r\n            WHERE public.calculate_next_cut_off_date(cc.cut_off_day) = CURRENT_DATE\r\n        LOOP\r\n            PERFORM public.generate_credit_card_statement(v_record.id);\r\n        END LOOP;\r\n    END\r\n    $do$;\r\n    	succeeded	DO	2025-02-04 01:00:00.259451+00	2025-02-04 01:00:00.325076+00
+2	88	669303	postgres	postgres	\r\n    SELECT public.process_recurring_transactions();\r\n    	succeeded	1 row	2025-02-04 01:00:00.257203+00	2025-02-04 01:00:00.374474+00
+3	101	727658	postgres	postgres	\r\n    DO \r\n    $do$\r\n    DECLARE\r\n        v_record record;\r\n    BEGIN\r\n        FOR v_record IN \r\n            SELECT cc.id\r\n            FROM public.credit_card_details cc\r\n            WHERE public.calculate_next_cut_off_date(cc.cut_off_day) = CURRENT_DATE\r\n        LOOP\r\n            PERFORM public.generate_credit_card_statement(v_record.id);\r\n        END LOOP;\r\n    END\r\n    $do$;\r\n    	succeeded	DO	2025-02-07 01:00:00.237827+00	2025-02-07 01:00:00.283626+00
+2	100	727657	postgres	postgres	\r\n    SELECT public.process_recurring_transactions();\r\n    	succeeded	1 row	2025-02-07 01:00:00.234609+00	2025-02-07 01:00:00.339027+00
+4	90	670084	postgres	postgres	\r\n    SELECT public.update_installment_purchases();\r\n    	succeeded	1 row	2025-02-04 02:00:00.022775+00	2025-02-04 02:00:00.037291+00
+4	98	708997	postgres	postgres	\r\n    SELECT public.update_installment_purchases();\r\n    	succeeded	1 row	2025-02-06 02:00:00.073755+00	2025-02-06 02:00:00.077489+00
+5	95	694715	postgres	postgres	\r\n    SELECT public.notify_credit_card_events();\r\n    	succeeded	1 row	2025-02-05 08:00:00.159305+00	2025-02-05 08:00:00.172057+00
+5	91	674918	postgres	postgres	\r\n    SELECT public.notify_credit_card_events();\r\n    	succeeded	1 row	2025-02-04 08:00:00.142121+00	2025-02-04 08:00:00.175286+00
+5	103	734595	postgres	postgres	\r\n    SELECT public.notify_credit_card_events();\r\n    	succeeded	1 row	2025-02-07 08:00:00.201154+00	2025-02-07 08:00:00.328966+00
+5	99	713853	postgres	postgres	\r\n    SELECT public.notify_credit_card_events();\r\n    	succeeded	1 row	2025-02-06 08:00:00.11943+00	2025-02-06 08:00:00.147753+00
+4	106	748547	postgres	postgres	\r\n    SELECT public.update_installment_purchases();\r\n    	succeeded	1 row	2025-02-08 02:00:00.017796+00	2025-02-08 02:00:00.022854+00
+5	107	753313	postgres	postgres	\r\n    SELECT public.notify_credit_card_events();\r\n    	succeeded	1 row	2025-02-08 08:00:00.159975+00	2025-02-08 08:00:00.208938+00
 \.
 
 
@@ -5719,7 +5845,6 @@ COPY public.schema_migrations (version) FROM stdin;
 COPY public.subcategory (id, name, description, category_id, jar_id, is_active, created_at, modified_at) FROM stdin;
 0a124972-f729-437f-84a6-0e2d552d23c2	Medicamentos	\N	a30fd06d-8da9-4466-927e-93602a7eb564	b5b3a838-3c90-432f-b7dc-a6ab37435594	t	2025-01-14 06:27:51.165001+00	\N
 1e80e529-6018-4ceb-ab67-b0e4c86f9758	Doctor	\N	a30fd06d-8da9-4466-927e-93602a7eb564	b5b3a838-3c90-432f-b7dc-a6ab37435594	t	2025-01-14 06:27:51.165001+00	\N
-4af4ed66-226e-4da7-a769-9adae5f19fad	Renta	\N	6b4f7c0b-409c-451f-8014-918bd849b5f2	b5b3a838-3c90-432f-b7dc-a6ab37435594	t	2025-01-14 06:27:51.165001+00	\N
 2a542d7e-2930-4f7f-8c2b-2d2b03412192	Pensión	\N	174554bc-69fc-495b-ae2b-36bcee604ea5	b5b3a838-3c90-432f-b7dc-a6ab37435594	t	2025-01-14 06:27:51.165001+00	\N
 89642c3d-d13e-4c28-928e-ac9014787bfd	Internet	\N	6b4f7c0b-409c-451f-8014-918bd849b5f2	b5b3a838-3c90-432f-b7dc-a6ab37435594	t	2025-01-14 06:27:51.165001+00	\N
 2654b443-8f19-4627-acc2-b5aa7bc531f0	Línea telefónica	\N	e8df3d86-41d3-4709-9633-45e683549040	b5b3a838-3c90-432f-b7dc-a6ab37435594	t	2025-01-14 06:27:51.165001+00	\N
@@ -5730,6 +5855,7 @@ COPY public.subcategory (id, name, description, category_id, jar_id, is_active, 
 9aea6430-7828-4a0e-bc2f-b76fdc022289	Claude AI	Servicio de Inteligencia Artificial	e8df3d86-41d3-4709-9633-45e683549040	aa9b583e-8921-4bf8-901a-c2c65a84f863	t	2025-01-16 20:58:12.626774+00	2025-01-16 20:58:12.62679+00
 70c317a2-cbdd-4ed4-b713-68abf08195fe	Ropa	\N	896da45f-b049-4c75-b5f8-02ed164deb4d	6e0dd1d2-e31f-4d66-acaa-3acbed11c853	t	2025-01-14 06:27:51.165001+00	2025-01-17 06:03:08.20509+00
 34fdca02-8582-48c1-a1eb-c6c6fb98f3fa	Regalos	Regalos para amistades o familiares	896da45f-b049-4c75-b5f8-02ed164deb4d	6e0dd1d2-e31f-4d66-acaa-3acbed11c853	t	2025-01-17 06:27:55.756819+00	2025-01-17 06:27:55.756832+00
+4af4ed66-226e-4da7-a769-9adae5f19fad	Renta	\N	6b4f7c0b-409c-451f-8014-918bd849b5f2	b5b3a838-3c90-432f-b7dc-a6ab37435594	t	2025-01-14 06:27:51.165001+00	2025-01-28 04:49:43.633791+00
 \.
 
 
@@ -5836,6 +5962,8 @@ COPY realtime.schema_migrations (version, inserted_at) FROM stdin;
 20241224161212	2025-01-10 18:42:03
 20250107150512	2025-01-10 18:42:04
 20250110162412	2025-01-10 18:42:04
+20250123174212	2025-02-05 06:27:48
+20250128220012	2025-02-05 06:27:48
 \.
 
 
@@ -5950,7 +6078,7 @@ COPY vault.secrets (id, name, description, secret, key_id, nonce, created_at, up
 -- Name: refresh_tokens_id_seq; Type: SEQUENCE SET; Schema: auth; Owner: supabase_auth_admin
 --
 
-SELECT pg_catalog.setval('auth.refresh_tokens_id_seq', 259, true);
+SELECT pg_catalog.setval('auth.refresh_tokens_id_seq', 280, true);
 
 
 --
@@ -5964,7 +6092,7 @@ SELECT pg_catalog.setval('cron.jobid_seq', 5, true);
 -- Name: runid_seq; Type: SEQUENCE SET; Schema: cron; Owner: supabase_admin
 --
 
-SELECT pg_catalog.setval('cron.runid_seq', 58, true);
+SELECT pg_catalog.setval('cron.runid_seq', 107, true);
 
 
 --
@@ -7548,14 +7676,6 @@ ALTER TABLE ONLY public.installment_purchase
 
 
 --
--- Name: installment_purchase installment_purchase_transaction_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.installment_purchase
-    ADD CONSTRAINT installment_purchase_transaction_id_fkey FOREIGN KEY (transaction_id) REFERENCES public.transaction(id);
-
-
---
 -- Name: jar_balance jar_balance_jar_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -7673,14 +7793,6 @@ ALTER TABLE ONLY public.transaction
 
 ALTER TABLE ONLY public.transaction
     ADD CONSTRAINT transaction_currency_id_fkey FOREIGN KEY (currency_id) REFERENCES public.currency(id);
-
-
---
--- Name: transaction transaction_installment_purchase_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.transaction
-    ADD CONSTRAINT transaction_installment_purchase_id_fkey FOREIGN KEY (installment_purchase_id) REFERENCES public.installment_purchase(id);
 
 
 --
@@ -9748,6 +9860,15 @@ GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.ex
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.financial_goal TO anon;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.financial_goal TO authenticated;
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.financial_goal TO service_role;
+
+
+--
+-- Name: TABLE foreign_keys; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.foreign_keys TO anon;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.foreign_keys TO authenticated;
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE public.foreign_keys TO service_role;
 
 
 --
