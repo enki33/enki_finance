@@ -56,26 +56,33 @@ class JarRemoteDataSourceImpl implements JarRemoteDataSource {
   @override
   Future<Jar> createJar(Jar jar) async {
     final model = JarModel.fromEntity(jar);
-    final response =
-        await _supabase.from('jar').insert(model.toJson()).select().single();
+    final response = await _supabase
+        .from('enki_finance.jar')
+        .insert(model.toJson())
+        .select()
+        .single();
     return JarModel.fromJson(response).toEntity();
   }
 
   @override
   Future<void> deleteJar(String jarId) async {
-    await _supabase.from('jar').delete().eq('id', jarId);
+    await _supabase.from('enki_finance.jar').delete().eq('id', jarId);
   }
 
   @override
   Future<Jar> getJar(String jarId) async {
-    final response =
-        await _supabase.from('jar').select().eq('id', jarId).single();
+    final response = await _supabase
+        .from('enki_finance.jar')
+        .select()
+        .eq('id', jarId)
+        .single();
     return JarModel.fromJson(response).toEntity();
   }
 
   @override
   Future<List<Jar>> getJars(String userId) async {
-    final response = await _supabase.from('jar').select().eq('user_id', userId);
+    final response =
+        await _supabase.from('enki_finance.jar').select().eq('user_id', userId);
     return (response as List<dynamic>)
         .map((json) => JarModel.fromJson(json).toEntity())
         .toList();
@@ -85,7 +92,7 @@ class JarRemoteDataSourceImpl implements JarRemoteDataSource {
   Future<Jar> updateJar(Jar jar) async {
     final model = JarModel.fromEntity(jar);
     final response = await _supabase
-        .from('jar')
+        .from('enki_finance.jar')
         .update(model.toJson())
         .eq('id', jar.id)
         .select()
@@ -100,7 +107,7 @@ class JarRemoteDataSourceImpl implements JarRemoteDataSource {
     DateTime? endDate,
   }) async {
     final response = await _supabase
-        .from('jar')
+        .from('enki_finance.jar')
         .select('''
           name,
           target_percentage,
@@ -160,7 +167,7 @@ class JarRemoteDataSourceImpl implements JarRemoteDataSource {
   @override
   Future<bool> isJarRequired(String categoryId) async {
     final response = await _supabase
-        .from('category')
+        .from('enki_finance.category')
         .select('requires_jar')
         .eq('id', categoryId)
         .single();
@@ -170,7 +177,7 @@ class JarRemoteDataSourceImpl implements JarRemoteDataSource {
   @override
   Future<double> getJarBalance(String jarId) async {
     final response = await _supabase
-        .from('jar_balance')
+        .from('enki_finance.jar_balance')
         .select('current_balance')
         .eq('jar_id', jarId)
         .single();
@@ -180,7 +187,7 @@ class JarRemoteDataSourceImpl implements JarRemoteDataSource {
   @override
   Future<double> getJarTargetPercentage(String jarId) async {
     final response = await _supabase
-        .from('jar')
+        .from('enki_finance.jar')
         .select('target_percentage')
         .eq('id', jarId)
         .single();

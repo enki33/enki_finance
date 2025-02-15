@@ -12,7 +12,7 @@ class SupabaseCurrencyRepository implements CurrencyRepository {
   Future<List<Currency>> getCurrencies() async {
     try {
       final response = await _client
-          .from('currency')
+          .from('enki_finance.currency')
           .select('id, code, name, symbol, is_active')
           .eq('is_active', true)
           .order('code');
@@ -37,8 +37,11 @@ class SupabaseCurrencyRepository implements CurrencyRepository {
   @override
   Future<Currency?> getCurrencyById({required String id}) async {
     try {
-      final response =
-          await _client.from('currency').select().eq('id', id).single();
+      final response = await _client
+          .from('enki_finance.currency')
+          .select()
+          .eq('id', id)
+          .single();
 
       return response == null ? null : Currency.fromJson(response);
     } catch (e) {
@@ -51,7 +54,7 @@ class SupabaseCurrencyRepository implements CurrencyRepository {
   Future<Currency?> getUserDefaultCurrency({required String userId}) async {
     try {
       final response = await _client
-          .from('app_user')
+          .from('enki_finance.app_user')
           .select(
               'default_currency_id, currency:default_currency_id(id, code, name, symbol, is_active)')
           .eq('id', userId)
@@ -81,7 +84,7 @@ class SupabaseCurrencyRepository implements CurrencyRepository {
   }) async {
     try {
       await _client
-          .from('app_user')
+          .from('enki_finance.app_user')
           .update({'default_currency_id': currencyId}).eq('id', userId);
     } catch (e) {
       debugPrint('Error updating user default currency: $e');

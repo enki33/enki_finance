@@ -15,8 +15,11 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
 
   @override
   Future<SettingsModel> getSettings(String userId) async {
-    final response =
-        await _client.from('app_user').select().eq('id', userId).single();
+    final response = await _client
+        .from('enki_finance.app_user')
+        .select()
+        .eq('id', userId)
+        .single();
 
     return SettingsModel.fromJson(response as Map<String, dynamic>);
   }
@@ -25,7 +28,7 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
   Future<SettingsModel> updateSettings(
       String userId, SettingsModel settings) async {
     final response = await _client
-        .from('app_user')
+        .from('enki_finance.app_user')
         .update(settings.toJson())
         .eq('id', userId)
         .select()
@@ -41,8 +44,10 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
 
   @override
   Future<bool> isSystemInitialized() async {
-    final response =
-        await _client.from('transaction_type').select('id').limit(1);
+    final response = await _client
+        .from('enki_finance.transaction_type')
+        .select('id')
+        .limit(1);
 
     return (response as List).isNotEmpty;
   }

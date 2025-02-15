@@ -25,8 +25,10 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
 
   @override
   Future<List<AccountModel>> getAccounts() async {
-    final response =
-        await supabase.from('account').select().order('created_at');
+    final response = await supabase
+        .from('enki_finance.account')
+        .select()
+        .order('created_at');
 
     return response
         .map<AccountModel>((json) => AccountModel.fromJson(json))
@@ -35,8 +37,11 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
 
   @override
   Future<AccountModel> getAccountById(String id) async {
-    final response =
-        await supabase.from('account').select().eq('id', id).single();
+    final response = await supabase
+        .from('enki_finance.account')
+        .select()
+        .eq('id', id)
+        .single();
 
     return AccountModel.fromJson(response);
   }
@@ -47,8 +52,11 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
     // Remove id field to let Supabase generate it
     json.remove('id');
 
-    final response =
-        await supabase.from('account').insert(json).select().single();
+    final response = await supabase
+        .from('enki_finance.account')
+        .insert(json)
+        .select()
+        .single();
 
     return AccountModel.fromJson(response);
   }
@@ -56,7 +64,7 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
   @override
   Future<AccountModel> updateAccount(AccountModel account) async {
     final response = await supabase
-        .from('account')
+        .from('enki_finance.account')
         .update(account.toJson())
         .eq('id', account.id!)
         .select()
@@ -67,13 +75,13 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
 
   @override
   Future<void> deleteAccount(String id) async {
-    await supabase.from('account').delete().eq('id', id);
+    await supabase.from('enki_finance.account').delete().eq('id', id);
   }
 
   @override
   Future<bool> hasTransactions(String accountId) async {
     final response = await supabase
-        .from('transaction')
+        .from('enki_finance.transaction')
         .select('id')
         .eq('account_id', accountId)
         .limit(1);
@@ -84,7 +92,7 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
   @override
   Future<CreditCardDetailsModel> getCreditCardDetails(String accountId) async {
     final response = await supabase
-        .from('credit_card_details')
+        .from('enki_finance.credit_card_details')
         .select()
         .eq('account_id', accountId)
         .single();
@@ -96,7 +104,7 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
   Future<CreditCardDetailsModel> createCreditCardDetails(
       CreditCardDetailsModel details) async {
     final response = await supabase
-        .from('credit_card_details')
+        .from('enki_finance.credit_card_details')
         .insert(details.toJson())
         .select()
         .single();
@@ -108,7 +116,7 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
   Future<CreditCardDetailsModel> updateCreditCardDetails(
       CreditCardDetailsModel details) async {
     final response = await supabase
-        .from('credit_card_details')
+        .from('enki_finance.credit_card_details')
         .update(details.toJson())
         .eq('id', details.id!)
         .select()
@@ -119,6 +127,9 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
 
   @override
   Future<void> deleteCreditCardDetails(String id) async {
-    await supabase.from('credit_card_details').delete().eq('id', id);
+    await supabase
+        .from('enki_finance.credit_card_details')
+        .delete()
+        .eq('id', id);
   }
 }
