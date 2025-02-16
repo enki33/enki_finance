@@ -15,13 +15,14 @@ class MainService {
       // Check if Supabase client is initialized
       try {
         print('Checking Supabase client...');
-        if (Supabase.instance.client == null) {
+        final session = Supabase.instance.client.auth.currentSession;
+        if (session == null) {
           throw const MainException('Supabase client is not initialized');
         }
         print('Supabase client check passed');
       } catch (e) {
         print('Supabase client check failed: $e');
-        throw const MainException('Supabase client validation failed');
+        throw const MainException('Supabase client is not initialized');
       }
 
       // Check if session is expired
@@ -110,7 +111,7 @@ class MainService {
       // Get the initial link if the app was launched from a link
       try {
         print('Checking for initial deep link...');
-        final initialLink = await appLinks.getInitialAppLink();
+        final initialLink = await appLinks.getInitialLink();
         if (initialLink != null) {
           print('Initial deep link found: $initialLink');
           _handleDeepLink(initialLink);

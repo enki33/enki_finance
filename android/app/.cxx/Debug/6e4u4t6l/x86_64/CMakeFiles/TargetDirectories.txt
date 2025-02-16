@@ -1,0 +1,2 @@
+C:/Users/enki/development/projects/flutter/enki/enki_finance/android/app/.cxx/Debug/6e4u4t6l/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/enki/development/projects/flutter/enki/enki_finance/android/app/.cxx/Debug/6e4u4t6l/x86_64/CMakeFiles/rebuild_cache.dir

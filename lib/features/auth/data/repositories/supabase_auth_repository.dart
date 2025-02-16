@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 
 import '../../domain/entities/auth_user.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -71,7 +72,11 @@ class SupabaseAuthRepository implements AuthRepository {
       );
       return _mapUserToAuthUser(response.user);
     } catch (e) {
-      debugPrint('Error signing up: $e');
+      if (e is AuthException) {
+        debugPrint('Auth Error Details:');
+        debugPrint('  Message: ${e.message}');
+        debugPrint('  Status: ${e.statusCode}');
+      }
       rethrow;
     }
   }

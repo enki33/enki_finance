@@ -6,8 +6,16 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.2.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.android.tools.build:gradle:8.2.2'
+    }
+}
+
+subprojects {
+    project.configurations.all {
+        resolutionStrategy.force 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'
+        resolutionStrategy.force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.22'
+        resolutionStrategy.force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.22'
     }
 }
 
