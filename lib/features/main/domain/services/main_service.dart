@@ -41,11 +41,12 @@ class MainService {
         throw MainException('Session validation failed: ${e.toString()}');
       }
 
-      // Check database connectivity
+      // Check database connectivity using app_user table
       try {
         print('Checking database connectivity...');
         await Supabase.instance.client
-            .from('transaction')
+            .schema('enki_finance')
+            .from('app_user')
             .select('id')
             .limit(1);
         print('Database connectivity check passed');

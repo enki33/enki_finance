@@ -20,6 +20,7 @@ Future<void> main() async {
     await Supabase.initialize(
       url: await EnvConfig.supabaseUrl,
       anonKey: await EnvConfig.supabaseAnonKey,
+      postgrestOptions: const PostgrestClientOptions(schema: 'enki_finance'),
     );
 
     // Initialize shared preferences

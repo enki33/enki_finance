@@ -99,7 +99,7 @@ class SupabaseAuthRepository implements AuthRepository {
   }) async {
     try {
       // Update app_user table
-      await _client.from('app_user').update({
+      await _client.schema('enki_finance').from('app_user').update({
         'first_name': firstName,
         'last_name': lastName,
       }).eq('id', userId);
@@ -146,5 +146,25 @@ class SupabaseAuthRepository implements AuthRepository {
       ),
     );
     return getCurrentUser().then((user) => user!);
+  }
+
+  Future<void> _createUserProfile(AuthUser user) async {
+    try {
+      await _client.schema('enki_finance').from('app_user').insert({
+        'id': user.id,
+        'email': user.email,
+        // ... other fields ...
+      });
+    } catch (e) {
+      debugPrint('Error updating user profile: $e');
+      if (e is supabase.PostgrestException) {
+        debugPrint('PostgreSQL Error Details:');
+        debugPrint('  Message: ${e.message}');
+        debugPrint('  Code: ${e.code}');
+        debugPrint('  Details: ${e.details}');
+        debugPrint('  Hint: ${e.hint}');
+      }
+      rethrow;
+    }
   }
 }
