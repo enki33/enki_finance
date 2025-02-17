@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:app_links/app_links.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -11,6 +12,20 @@ class MainService {
   Future<void> validateAppState() async {
     try {
       print('Starting app state validation...');
+
+      // Check internet connectivity first
+      try {
+        print('Checking internet connectivity...');
+        final connectivityResult = await Connectivity().checkConnectivity();
+        if (connectivityResult == ConnectivityResult.none) {
+          throw const MainException('No internet connection available');
+        }
+        print('Internet connectivity check passed');
+      } catch (e) {
+        print('Internet connectivity check failed: $e');
+        throw MainException(
+            'Internet connectivity check failed: ${e.toString()}');
+      }
 
       // Check if Supabase client is initialized
       try {
@@ -41,17 +56,42 @@ class MainService {
         throw MainException('Session validation failed: ${e.toString()}');
       }
 
-      // Check database connectivity using app_user table
+      // Check database connectivity with retry logic
       try {
         print('Checking database connectivity...');
-        await Supabase.instance.client
-            .schema('enki_finance')
-            .from('app_user')
-            .select('id')
-            .limit(1);
-        print('Database connectivity check passed');
+        int retryCount = 0;
+        const maxRetries = 3;
+        while (retryCount < maxRetries) {
+          try {
+            await Supabase.instance.client
+                .schema('enki_finance')
+                .from('app_user')
+                .select('id')
+                .limit(1);
+            print('Database connectivity check passed');
+            break;
+          } catch (e) {
+            retryCount++;
+            if (retryCount == maxRetries) {
+              print(
+                  'Database connectivity check failed after $maxRetries attempts: $e');
+              throw e;
+            }
+            print(
+                'Retry $retryCount/$maxRetries: Database connectivity check failed, retrying...');
+            await Future.delayed(
+                Duration(seconds: retryCount)); // Exponential backoff
+          }
+        }
       } catch (e) {
         print('Database connectivity check failed: $e');
+        if (e is PostgrestException) {
+          print('PostgrestException details:');
+          print('  Message: ${e.message}');
+          print('  Code: ${e.code}');
+          print('  Details: ${e.details}');
+          print('  Hint: ${e.hint}');
+        }
         throw MainException('Database validation failed: ${e.toString()}');
       }
 

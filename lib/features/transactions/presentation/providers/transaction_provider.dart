@@ -163,9 +163,9 @@ final dailyTotalsProvider = FutureProvider.family<
     (failure) => throw failure,
     (totals) => totals
         .map((t) => DailyTotal(
-              date: t.transactionDate,
-              amount: t.totalAmount,
-              count: t.transactionCount,
+              date: t.date,
+              amount: t.amount,
+              count: t.count,
             ))
         .toList(),
   );

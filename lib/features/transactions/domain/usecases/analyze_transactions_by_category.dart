@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 
 import '../entities/transaction_analysis.dart';
+import '../entities/category_analysis.dart';
 import '../repositories/transaction_repository.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/usecases/usecase.dart';

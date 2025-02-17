@@ -10,6 +10,8 @@ class TransactionSummary with _$TransactionSummary {
     required double totalAmount,
     required String currencyId,
     required int transactionCount,
+    required DateTime periodStart,
+    required DateTime periodEnd,
   }) = _TransactionSummary;
 
   factory TransactionSummary.fromJson(Map<String, dynamic> json) =>

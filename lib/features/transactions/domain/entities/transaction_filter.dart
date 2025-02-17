@@ -4,7 +4,7 @@ part 'transaction_filter.freezed.dart';
 part 'transaction_filter.g.dart';
 
 mixin TransactionFilterMixin {
-  String? get userId;
+  String get userId;
   DateTime? get startDate;
   DateTime? get endDate;
   String? get transactionTypeId;
@@ -36,7 +36,7 @@ class TransactionFilter with _$TransactionFilter, TransactionFilterMixin {
   const TransactionFilter._();
 
   const factory TransactionFilter({
-    String? userId,
+    required String userId,
     DateTime? startDate,
     DateTime? endDate,
     String? transactionTypeId,

@@ -7,6 +7,7 @@ import '../models/transaction_model.dart';
 import '../../domain/entities/daily_total.dart';
 import '../../domain/entities/transaction_summary.dart' as summary;
 import '../../domain/entities/balance_history.dart';
+import '../../domain/entities/category_analysis.dart';
 
 abstract class TransactionRemoteDataSource {
   Future<Transaction> createTransaction(Transaction transaction);
@@ -33,7 +34,7 @@ abstract class TransactionRemoteDataSource {
     String? transactionType,
   });
 
-  Future<List<DailyTotals>> getDailyTotals({
+  Future<List<DailyTotal>> getDailyTotals({
     required String userId,
     required DateTime startDate,
     required DateTime endDate,
@@ -104,13 +105,13 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
 
   @override
   Future<Transaction> createTransaction(Transaction transaction) async {
-    final response = await _supabase.rpc(
-      'create_transaction',
-      params: TransactionModel.fromEntity(transaction).toJson(),
-    );
-
-    return TransactionModel.fromJson(response as Map<String, dynamic>)
-        .toEntity();
+    final model = TransactionModel.fromEntity(transaction);
+    final response = await _supabase
+        .from('transaction')
+        .insert(model.toJson())
+        .select()
+        .single();
+    return TransactionModel.fromJson(response).toEntity();
   }
 
   @override
@@ -118,14 +119,21 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     required String userId,
     TransactionFilter? filter,
   }) async {
-    final response = await _supabase.rpc(
-      'get_transactions',
-      params: {
-        'p_user_id': userId,
-        'p_filter': filter?.toJson(),
-      },
-    );
+    var query = _supabase.from('transaction').select().eq('user_id', userId);
 
+    if (filter != null) {
+      if (filter.startDate != null) {
+        query =
+            query.gte('transaction_date', filter.startDate!.toIso8601String());
+      }
+      if (filter.endDate != null) {
+        query =
+            query.lte('transaction_date', filter.endDate!.toIso8601String());
+      }
+      // Add other filters...
+    }
+
+    final response = await query.order('transaction_date', ascending: false);
     return (response as List<dynamic>)
         .map((json) => TransactionModel.fromJson(json).toEntity())
         .toList();
@@ -179,9 +187,9 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       'analyze_transactions_by_category',
       params: {
         'p_user_id': userId,
-        'p_start_date': startDate?.toIso8601String(),
-        'p_end_date': endDate?.toIso8601String(),
-        'p_transaction_type': transactionType,
+        if (startDate != null) 'p_start_date': startDate.toIso8601String(),
+        if (endDate != null) 'p_end_date': endDate.toIso8601String(),
+        if (transactionType != null) 'p_transaction_type': transactionType,
       },
     );
 
@@ -192,7 +200,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
         transactionCount: json['transaction_count'] as int,
         totalAmount: (json['total_amount'] as num).toDouble(),
         percentageOfTotal: (json['percentage_of_total'] as num).toDouble(),
-        averageAmount: (json['avg_amount'] as num).toDouble(),
+        averageAmount: (json['average_amount'] as num).toDouble(),
         minAmount: (json['min_amount'] as num).toDouble(),
         maxAmount: (json['max_amount'] as num).toDouble(),
       );
@@ -200,7 +208,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   }
 
   @override
-  Future<List<DailyTotals>> getDailyTotals({
+  Future<List<DailyTotal>> getDailyTotals({
     required String userId,
     required DateTime startDate,
     required DateTime endDate,
@@ -217,10 +225,10 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     );
 
     return (response as List<dynamic>).map((json) {
-      return DailyTotals(
-        transactionDate: DateTime.parse(json['transaction_date'] as String),
-        totalAmount: (json['total_amount'] as num).toDouble(),
-        transactionCount: json['transaction_count'] as int,
+      return DailyTotal(
+        date: DateTime.parse(json['transaction_date'] as String),
+        amount: (json['total_amount'] as num).toDouble(),
+        count: json['transaction_count'] as int,
       );
     }).toList();
   }
@@ -246,6 +254,8 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
         totalAmount: (json['total_amount'] as num).toDouble(),
         currencyId: json['currency_id'] as String,
         transactionCount: json['transaction_count'] as int,
+        periodStart: DateTime.parse(json['period_start'] as String),
+        periodEnd: DateTime.parse(json['period_end'] as String),
       );
     }).toList();
   }
@@ -341,18 +351,20 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    final query =
+    var query =
         _supabase.from('balance_history').select().eq('account_id', accountId);
 
     if (startDate != null) {
-      query.gte('created_at', startDate.toIso8601String());
+      query = query.gte('created_at', startDate.toIso8601String());
     }
     if (endDate != null) {
-      query.lte('created_at', endDate.toIso8601String());
+      query = query.lte('created_at', endDate.toIso8601String());
     }
 
     final response = await query;
-    return response.map((json) => BalanceHistory.fromJson(json)).toList();
+    return (response as List<dynamic>)
+        .map((json) => BalanceHistory.fromJson(json))
+        .toList();
   }
 
   @override

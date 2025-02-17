@@ -6,6 +6,7 @@ import '../entities/transaction_summary.dart' as summary;
 import '../entities/daily_total.dart';
 import '../repositories/transaction_repository.dart';
 import '../exceptions/transaction_exception.dart';
+import '../entities/category_analysis.dart';
 
 class TransactionAnalysisService {
   const TransactionAnalysisService(this._repository);
@@ -33,7 +34,7 @@ class TransactionAnalysisService {
     }
   }
 
-  Future<Either<Failure, List<DailyTotals>>> getDailyTotals({
+  Future<Either<Failure, List<DailyTotal>>> getDailyTotals({
     required String userId,
     required DateTime startDate,
     required DateTime endDate,

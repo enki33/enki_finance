@@ -177,14 +177,6 @@ class TransactionDetailsPage extends ConsumerWidget {
                     loading: () => const CircularProgressIndicator(),
                     error: (error, stack) => Text('Error: $error'),
                   ),
-                  if (transaction.transactionMediumId != null) ...[
-                    const Divider(),
-                    _buildDetailRow(
-                      context,
-                      'Medio de Pago',
-                      'TODO: Load medium name', // TODO: Add transaction mediums provider
-                    ),
-                  ],
                 ],
               ),
             ),

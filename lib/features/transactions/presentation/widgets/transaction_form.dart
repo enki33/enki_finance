@@ -38,10 +38,10 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   String? _selectedSubcategory;
   String? _selectedAccount;
   String? _selectedJar;
-  String? _selectedMedium;
   Map<String, dynamic>? _tags;
   bool _isJarRequired = false;
   String? _errorMessage;
+  late AsyncValue<List<Category>> categoriesAsync;
 
   @override
   void initState() {
@@ -60,7 +60,6 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     _selectedSubcategory = widget.transaction?.subcategoryId;
     _selectedAccount = widget.transaction?.accountId;
     _selectedJar = widget.transaction?.jarId;
-    _selectedMedium = widget.transaction?.transactionMediumId;
     _tags = widget.transaction?.tags
         ?.asMap()
         .map((k, v) => MapEntry(k.toString(), v));
@@ -122,8 +121,8 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
 
   @override
   Widget build(BuildContext context) {
+    categoriesAsync = ref.watch(categoriesProvider(widget.userId));
     final transactionTypesAsync = ref.watch(transactionTypesProvider);
-    final categoriesAsync = ref.watch(categoriesProvider(widget.userId));
     final subcategoriesAsync = _selectedCategory != null
         ? ref.watch(subcategoriesProvider(_selectedCategory!))
         : null;
@@ -132,6 +131,7 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     final isSubmitting = ref.watch(transactionNotifierProvider).isLoading;
     final amountValidator = ref.watch(amountValidatorProvider);
     final dateValidator = ref.watch(dateValidatorProvider);
+    final categories = ref.read(categoriesProvider(widget.userId));
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -435,6 +435,10 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
 
     if (_formKey.currentState!.validate()) {
       try {
+        final categoryName = categoriesAsync.value!
+            .firstWhere((c) => c.id == _selectedCategory!)
+            .name;
+
         final transaction = Transaction(
           id: widget.transaction?.id ?? '',
           userId: widget.userId,
@@ -445,10 +449,10 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
           amount: double.parse(_amountController.text),
           transactionTypeId: _selectedTransactionType!,
           categoryId: _selectedCategory!,
+          categoryName: categoryName,
           subcategoryId: _selectedSubcategory!,
           accountId: _selectedAccount!,
           jarId: _selectedJar,
-          transactionMediumId: _selectedMedium,
           currencyId: 'MXN', // TODO: Implement currency selection
           notes: _notesController.text.isEmpty ? null : _notesController.text,
           tags: _tags?.values.map((v) => v.toString()).toList(),

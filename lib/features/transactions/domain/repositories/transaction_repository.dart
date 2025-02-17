@@ -6,6 +6,7 @@ import '../entities/transaction_analysis.dart';
 import '../entities/transaction_filter.dart';
 import '../entities/transaction_summary.dart' as summary;
 import '../entities/balance_history.dart';
+import '../entities/category_analysis.dart';
 
 abstract class TransactionRepository {
   Future<Either<Failure, Transaction>> createTransaction(
@@ -67,7 +68,7 @@ abstract class TransactionRepository {
     required bool isUpdate,
   });
 
-  Future<Either<Failure, List<DailyTotals>>> getDailyTotals({
+  Future<Either<Failure, List<DailyTotal>>> getDailyTotals({
     required String userId,
     required DateTime startDate,
     required DateTime endDate,

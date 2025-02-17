@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/transaction_filter.dart';
 
 class TransactionFilterNotifier extends StateNotifier<TransactionFilter> {
-  TransactionFilterNotifier() : super(const TransactionFilter());
+  TransactionFilterNotifier() : super(const TransactionFilter(userId: ''));
 
   void setUserId(String userId) {
     state = state.copyWith(
@@ -84,7 +84,7 @@ class TransactionFilterNotifier extends StateNotifier<TransactionFilter> {
   }
 
   void clearFilters() {
-    state = const TransactionFilter();
+    state = TransactionFilter(userId: state.userId);
   }
 }
 

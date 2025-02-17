@@ -11,6 +11,7 @@ import '../datasources/transaction_remote_data_source.dart';
 import '../../domain/entities/transaction_summary.dart' as summary;
 import '../../domain/entities/daily_total.dart';
 import '../../domain/entities/balance_history.dart';
+import '../../domain/entities/category_analysis.dart';
 
 class SupabaseTransactionRepository implements TransactionRepository {
   final SupabaseClient supabase;
@@ -49,9 +50,11 @@ class SupabaseTransactionRepository implements TransactionRepository {
       );
       return right(result);
     } on PostgrestException catch (e) {
-      if (e.toString().contains('permission denied')) {
-        return left(AuthorizationFailure('Permission denied'));
-      }
+      debugPrint('PostgrestException details:');
+      debugPrint('  Message: ${e.message}');
+      debugPrint('  Code: ${e.code}');
+      debugPrint('  Details: ${e.details}');
+      debugPrint('  Hint: ${e.hint}');
       return left(ServerFailure(e.toString()));
     } catch (e) {
       return left(ServerFailure(e.toString()));
@@ -138,7 +141,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
   }
 
   @override
-  Future<Either<Failure, List<DailyTotals>>> getDailyTotals({
+  Future<Either<Failure, List<DailyTotal>>> getDailyTotals({
     required String userId,
     required DateTime startDate,
     required DateTime endDate,
@@ -290,6 +293,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
         userId: '',
         transactionTypeId: '',
         categoryId: '',
+        categoryName: 'Validation',
         accountId: accountId,
         amount: 0,
         currencyId: '',
@@ -326,6 +330,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
         userId: '',
         transactionTypeId: '',
         categoryId: categoryId,
+        categoryName: 'Validation',
         subcategoryId: subcategoryId,
         accountId: '',
         amount: 0,
@@ -352,6 +357,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
         userId: '',
         transactionTypeId: '',
         categoryId: '',
+        categoryName: 'Validation',
         accountId: accountId,
         amount: amount,
         currencyId: '',
@@ -374,6 +380,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
         userId: '',
         transactionTypeId: '',
         categoryId: '',
+        categoryName: 'Validation',
         accountId: '',
         amount: 0,
         currencyId: currencyId,
@@ -399,6 +406,7 @@ class SupabaseTransactionRepository implements TransactionRepository {
         userId: '',
         transactionTypeId: '',
         categoryId: '',
+        categoryName: 'Validation',
         subcategoryId: subcategoryId,
         accountId: '',
         amount: 0,

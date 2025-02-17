@@ -32,8 +32,6 @@ enum BalanceChangeType {
   transfer,
   @JsonValue('ADJUSTMENT')
   adjustment,
-  @JsonValue('ROLLOVER')
-  rollover,
 }
 
 /// Represents the type of entity referenced in the balance history
