@@ -25,6 +25,10 @@ import 'package:enki_finance/features/transactions/domain/usecases/validate_tran
 import 'package:enki_finance/features/transactions/domain/validators/transaction_validator.dart';
 import 'package:enki_finance/features/transactions/presentation/providers/transaction_filter_provider.dart'
     as filter;
+import 'package:enki_finance/features/transactions/domain/entities/installment_purchase.dart';
+import 'package:enki_finance/features/transactions/domain/entities/recurring_transaction.dart';
+import 'package:enki_finance/features/transactions/domain/repositories/i_transaction_repository.dart';
+import 'package:enki_finance/features/transactions/data/repositories/transaction_repository_impl.dart';
 
 // Data Source Provider
 final transactionRemoteDataSourceProvider =
@@ -33,11 +37,9 @@ final transactionRemoteDataSourceProvider =
 });
 
 // Repository Providers
-final transactionRepositoryProvider =
-    Provider<SupabaseTransactionRepository>((ref) {
-  final supabase = ref.watch(supabaseClientProvider);
-  final remoteDataSource = TransactionRemoteDataSourceImpl(supabase);
-  return SupabaseTransactionRepository(supabase, remoteDataSource);
+final transactionRepositoryProvider = Provider<ITransactionRepository>((ref) {
+  final dataSource = ref.watch(transactionRemoteDataSourceProvider);
+  return TransactionRepositoryImpl(dataSource);
 });
 
 // Use Case Providers
@@ -248,3 +250,81 @@ final transactionNotifierProvider =
   final validator = ref.watch(transactionValidatorProvider);
   return TransactionNotifier(repository, syncService, validator);
 });
+
+class TransactionProvider extends StateNotifier<AsyncValue<List<Transaction>>> {
+  final GetTransactions getTransactions;
+  final CreateTransaction createTransaction;
+  // ... other use cases
+
+  TransactionProvider({
+    required this.getTransactions,
+    required this.createTransaction,
+    // ... other use cases
+  }) : super(const AsyncValue.loading());
+
+  Future<void> loadTransactions(TransactionFilter filter) async {
+    state = const AsyncValue.loading();
+    try {
+      final transactions = await getTransactions(filter);
+      state = AsyncValue.data(transactions);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  // ... other methods using use cases
+}
+
+final installmentPurchaseProvider = StateNotifierProvider<
+    InstallmentPurchaseNotifier, AsyncValue<List<InstallmentPurchase>>>((ref) {
+  final repository = ref.watch(transactionRepositoryProvider);
+  return InstallmentPurchaseNotifier(repository);
+});
+
+final recurringTransactionProvider = StateNotifierProvider<
+    RecurringTransactionNotifier,
+    AsyncValue<List<RecurringTransaction>>>((ref) {
+  final repository = ref.watch(transactionRepositoryProvider);
+  return RecurringTransactionNotifier(repository);
+});
+
+class InstallmentPurchaseNotifier
+    extends StateNotifier<AsyncValue<List<InstallmentPurchase>>> {
+  final ITransactionRepository _repository;
+
+  InstallmentPurchaseNotifier(this._repository)
+      : super(const AsyncValue.loading());
+
+  Future<void> createInstallmentPurchase(InstallmentPurchase purchase) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.createInstallmentPurchase(purchase);
+      final purchases =
+          await _repository.getInstallmentPurchases(purchase.userId);
+      state = AsyncValue.data(purchases);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+}
+
+class RecurringTransactionNotifier
+    extends StateNotifier<AsyncValue<List<RecurringTransaction>>> {
+  final ITransactionRepository _repository;
+
+  RecurringTransactionNotifier(this._repository)
+      : super(const AsyncValue.loading());
+
+  Future<void> createRecurringTransaction(
+      RecurringTransaction transaction) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.createRecurringTransaction(transaction);
+      final transactions =
+          await _repository.getRecurringTransactions(transaction.userId);
+      state = AsyncValue.data(transactions);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+}

@@ -8,6 +8,9 @@ import '../../domain/entities/daily_total.dart';
 import '../../domain/entities/transaction_summary.dart' as summary;
 import '../../domain/entities/balance_history.dart';
 import '../../domain/entities/category_analysis.dart';
+import '../../domain/entities/installment_purchase.dart';
+import '../../domain/entities/recurring_transaction.dart';
+import '../../domain/exceptions/transaction_exception.dart';
 
 abstract class TransactionRemoteDataSource {
   Future<Transaction> createTransaction(Transaction transaction);
@@ -96,6 +99,16 @@ abstract class TransactionRemoteDataSource {
   });
 
   Future<void> recordBalanceHistory(BalanceHistory history);
+
+  Future<InstallmentPurchase> createInstallmentPurchase(
+      InstallmentPurchase purchase);
+  Future<List<InstallmentPurchase>> getInstallmentPurchases(String userId);
+  Future<void> updateInstallmentPurchase(InstallmentPurchase purchase);
+
+  Future<RecurringTransaction> createRecurringTransaction(
+      RecurringTransaction transaction);
+  Future<List<RecurringTransaction>> getRecurringTransactions(String userId);
+  Future<void> updateRecurringTransaction(RecurringTransaction transaction);
 }
 
 class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
@@ -119,24 +132,50 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     required String userId,
     TransactionFilter? filter,
   }) async {
-    var query = _supabase.from('transaction').select().eq('user_id', userId);
+    try {
+      var query = _supabase.from('transaction').select().eq('user_id', userId);
 
-    if (filter != null) {
-      if (filter.startDate != null) {
-        query =
-            query.gte('transaction_date', filter.startDate!.toIso8601String());
+      if (filter != null) {
+        if (filter.startDate != null) {
+          query = query.gte(
+              'transaction_date', filter.startDate!.toIso8601String());
+        }
+        if (filter.endDate != null) {
+          query =
+              query.lte('transaction_date', filter.endDate!.toIso8601String());
+        }
+        if (filter.categoryId != null) {
+          query = query.eq('category_id', filter.categoryId!);
+        }
+        if (filter.subcategoryId != null) {
+          query = query.eq('subcategory_id', filter.subcategoryId!);
+        }
+        if (filter.accountId != null) {
+          query = query.eq('account_id', filter.accountId!);
+        }
+        if (filter.jarId != null) {
+          query = query.eq('jar_id', filter.jarId!);
+        }
+        if (filter.orderBy != null) {
+          query.order(filter.orderBy!,
+              ascending: filter.orderDirection == 'asc');
+        }
+        if (filter.limit != null) {
+          query.limit(filter.limit!);
+        }
+        if (filter.offset != null) {
+          query.range(
+              filter.offset!, filter.offset! + (filter.limit ?? 10) - 1);
+        }
       }
-      if (filter.endDate != null) {
-        query =
-            query.lte('transaction_date', filter.endDate!.toIso8601String());
-      }
-      // Add other filters...
+
+      final response = await query;
+      return response
+          .map((json) => TransactionModel.fromJson(json).toEntity())
+          .toList();
+    } catch (e) {
+      throw TransactionException('Failed to fetch transactions: $e');
     }
-
-    final response = await query.order('transaction_date', ascending: false);
-    return (response as List<dynamic>)
-        .map((json) => TransactionModel.fromJson(json).toEntity())
-        .toList();
   }
 
   @override
@@ -418,5 +457,46 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   @override
   Future<void> recordBalanceHistory(BalanceHistory history) async {
     await _supabase.from('balance_history').insert(history.toJson());
+  }
+
+  @override
+  Future<InstallmentPurchase> createInstallmentPurchase(
+      InstallmentPurchase purchase) async {
+    // Implementation needed
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<InstallmentPurchase>> getInstallmentPurchases(
+      String userId) async {
+    // Implementation needed
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateInstallmentPurchase(InstallmentPurchase purchase) async {
+    // Implementation needed
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<RecurringTransaction> createRecurringTransaction(
+      RecurringTransaction transaction) async {
+    // Implementation needed
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<RecurringTransaction>> getRecurringTransactions(
+      String userId) async {
+    // Implementation needed
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateRecurringTransaction(
+      RecurringTransaction transaction) async {
+    // Implementation needed
+    throw UnimplementedError();
   }
 }

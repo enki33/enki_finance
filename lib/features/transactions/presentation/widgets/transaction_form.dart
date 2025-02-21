@@ -11,16 +11,19 @@ import 'package:enki_finance/features/maintenance/domain/entities/subcategory.da
 import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:enki_finance/core/providers/validator_providers.dart';
+import 'package:enki_finance/domain/validators/transaction_validator.dart';
+import 'package:enki_finance/features/transactions/presentation/providers/tag_suggestions_provider.dart';
+import '../widgets/add_tag_dialog.dart';
 
 class TransactionForm extends ConsumerStatefulWidget {
-  final String userId;
-  final Transaction? transaction;
+  final Transaction? initialTransaction;
+  final Function(Transaction) onSubmit;
 
   const TransactionForm({
-    super.key,
-    required this.userId,
-    this.transaction,
-  });
+    Key? key,
+    this.initialTransaction,
+    required this.onSubmit,
+  }) : super(key: key);
 
   @override
   ConsumerState<TransactionForm> createState() => _TransactionFormState();
@@ -28,17 +31,18 @@ class TransactionForm extends ConsumerStatefulWidget {
 
 class _TransactionFormState extends ConsumerState<TransactionForm> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _descriptionController;
-  late final TextEditingController _amountController;
-  late final TextEditingController _notesController;
-  late final TextEditingController _dateController;
-  late DateTime _transactionDate;
+  late TextEditingController _amountController;
+  late TextEditingController _descriptionController;
+  late TextEditingController _notesController;
+  late DateTime _selectedDate;
   String? _selectedTransactionType;
   String? _selectedCategory;
   String? _selectedSubcategory;
   String? _selectedAccount;
+  String? _selectedCurrency;
   String? _selectedJar;
-  Map<String, dynamic>? _tags;
+  List<String> _selectedTags = [];
+  double _exchangeRate = 1.0;
   bool _isJarRequired = false;
   String? _errorMessage;
   late AsyncValue<List<Category>> categoriesAsync;
@@ -46,23 +50,29 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   @override
   void initState() {
     super.initState();
-    _descriptionController =
-        TextEditingController(text: widget.transaction?.description);
+    _initializeControllers();
+  }
+
+  void _initializeControllers() {
+    final transaction = widget.initialTransaction;
     _amountController = TextEditingController(
-      text: widget.transaction?.amount.toString() ?? '',
+      text: transaction?.amount.toString() ?? '',
     );
-    _notesController = TextEditingController(text: widget.transaction?.notes);
-    _dateController = TextEditingController();
-    _transactionDate = widget.transaction?.transactionDate ?? DateTime.now();
-    _dateController.text = DateFormat('dd/MM/yyyy').format(_transactionDate);
-    _selectedTransactionType = widget.transaction?.transactionTypeId;
-    _selectedCategory = widget.transaction?.categoryId;
-    _selectedSubcategory = widget.transaction?.subcategoryId;
-    _selectedAccount = widget.transaction?.accountId;
-    _selectedJar = widget.transaction?.jarId;
-    _tags = widget.transaction?.tags
-        ?.asMap()
-        .map((k, v) => MapEntry(k.toString(), v));
+    _descriptionController = TextEditingController(
+      text: transaction?.description ?? '',
+    );
+    _notesController = TextEditingController(
+      text: transaction?.notes ?? '',
+    );
+    _selectedDate = transaction?.transactionDate ?? DateTime.now();
+    _selectedTransactionType = transaction?.transactionTypeId;
+    _selectedCategory = transaction?.categoryId;
+    _selectedSubcategory = transaction?.subcategoryId;
+    _selectedAccount = transaction?.accountId;
+    _selectedCurrency = transaction?.currencyId;
+    _selectedJar = transaction?.jarId;
+    _selectedTags = transaction?.tags ?? [];
+    _exchangeRate = transaction?.exchangeRate ?? 1.0;
 
     // Check if jar is required for initial subcategory
     if (_selectedSubcategory != null) {
@@ -112,16 +122,16 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
 
   @override
   void dispose() {
-    _descriptionController.dispose();
     _amountController.dispose();
+    _descriptionController.dispose();
     _notesController.dispose();
-    _dateController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    categoriesAsync = ref.watch(categoriesProvider(widget.userId));
+    categoriesAsync =
+        ref.watch(categoriesProvider(widget.initialTransaction?.userId));
     final transactionTypesAsync = ref.watch(transactionTypesProvider);
     final subcategoriesAsync = _selectedCategory != null
         ? ref.watch(subcategoriesProvider(_selectedCategory!))
@@ -131,7 +141,8 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     final isSubmitting = ref.watch(transactionNotifierProvider).isLoading;
     final amountValidator = ref.watch(amountValidatorProvider);
     final dateValidator = ref.watch(dateValidatorProvider);
-    final categories = ref.read(categoriesProvider(widget.userId));
+    final categories =
+        ref.read(categoriesProvider(widget.initialTransaction?.userId));
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -156,37 +167,6 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
               ),
 
             // Transaction Date
-            TextFormField(
-              controller: _dateController,
-              decoration: const InputDecoration(
-                labelText: 'Fecha',
-                border: OutlineInputBorder(),
-              ),
-              readOnly: true,
-              validator: (value) =>
-                  dateValidator.validateTransactionDate(value).fold(
-                        (failure) => failure.message,
-                        (_) => null,
-                      ),
-              onTap: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: _transactionDate,
-                  firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                  lastDate: DateTime.now(),
-                );
-                if (date != null) {
-                  setState(() {
-                    _transactionDate = date;
-                    _dateController.text =
-                        DateFormat('dd/MM/yyyy').format(date);
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Amount
             TextFormField(
               controller: _amountController,
               decoration: const InputDecoration(
@@ -403,6 +383,56 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
             ),
             const SizedBox(height: 24),
 
+            // Tag Selection
+            Consumer(
+              builder: (context, ref, child) {
+                final suggestionsAsync = ref.watch(tagSuggestionsProvider(
+                    widget.initialTransaction?.userId ?? ''));
+
+                return suggestionsAsync.when(
+                  data: (suggestions) => Wrap(
+                    spacing: 8.0,
+                    children: [
+                      ...suggestions.map((tag) {
+                        final isSelected = _selectedTags.contains(tag);
+                        return FilterChip(
+                          label: Text(tag),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedTags.add(tag);
+                              } else {
+                                _selectedTags.remove(tag);
+                              }
+                            });
+                          },
+                        );
+                      }),
+                      // Add new tag button
+                      ActionChip(
+                        avatar: const Icon(Icons.add),
+                        label: const Text('Agregar etiqueta'),
+                        onPressed: () async {
+                          final newTag = await showDialog<String>(
+                            context: context,
+                            builder: (context) => AddTagDialog(),
+                          );
+                          if (newTag != null && newTag.isNotEmpty) {
+                            setState(() {
+                              _selectedTags.add(newTag);
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  loading: () => const CircularProgressIndicator(),
+                  error: (error, stack) => Text('Error: $error'),
+                );
+              },
+            ),
+
             // Submit Button
             FilledButton.icon(
               onPressed: isSubmitting ? null : _submit,
@@ -417,7 +447,7 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
                     )
                   : const Icon(Icons.save),
               label: Text(
-                widget.transaction == null
+                widget.initialTransaction == null
                     ? 'Crear Transacción'
                     : 'Guardar Cambios',
               ),
@@ -429,89 +459,32 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   }
 
   void _submit() async {
-    setState(() {
-      _errorMessage = null;
-    });
-
     if (_formKey.currentState!.validate()) {
       try {
-        final categoryName = categoriesAsync.value!
-            .firstWhere((c) => c.id == _selectedCategory!)
-            .name;
-
         final transaction = Transaction(
-          id: widget.transaction?.id ?? '',
-          userId: widget.userId,
-          transactionDate: _transactionDate,
-          description: _descriptionController.text.isEmpty
-              ? null
-              : _descriptionController.text,
-          amount: double.parse(_amountController.text),
+          id: widget.initialTransaction?.id ?? '',
+          userId: widget.initialTransaction?.userId ?? '',
           transactionTypeId: _selectedTransactionType!,
           categoryId: _selectedCategory!,
-          categoryName: categoryName,
-          subcategoryId: _selectedSubcategory!,
+          categoryName: '', // Will be filled by backend
+          subcategoryId: _selectedSubcategory,
           accountId: _selectedAccount!,
           jarId: _selectedJar,
-          currencyId: 'MXN', // TODO: Implement currency selection
+          amount: double.parse(_amountController.text),
+          currencyId: _selectedCurrency ?? 'MXN',
+          transactionDate: _selectedDate,
+          description: _descriptionController.text,
           notes: _notesController.text.isEmpty ? null : _notesController.text,
-          tags: _tags?.values.map((v) => v.toString()).toList(),
-          createdAt: widget.transaction?.createdAt ?? DateTime.now(),
+          tags: _selectedTags,
+          createdAt: widget.initialTransaction?.createdAt ?? DateTime.now(),
           updatedAt: DateTime.now(),
         );
 
-        final notifier = ref.read(transactionNotifierProvider.notifier);
-
-        if (widget.transaction == null) {
-          await notifier.createTransaction(transaction);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Transacción creada exitosamente'),
-                backgroundColor: Colors.green,
-              ),
-            );
-            Navigator.of(context).pop();
-          }
-        } else {
-          await notifier.updateTransaction(transaction);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Transacción actualizada exitosamente'),
-                backgroundColor: Colors.green,
-              ),
-            );
-            Navigator.of(context).pop();
-          }
-        }
+        widget.onSubmit(transaction);
       } catch (e) {
         setState(() {
-          if (e is ValidationFailure) {
-            _errorMessage = e.message;
-          } else if (e is ServerFailure) {
-            _errorMessage = 'Error del servidor: ${e.message}';
-          } else {
-            _errorMessage = e.toString();
-          }
+          _errorMessage = e.toString();
         });
-
-        // Show error in a dialog for better visibility
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Error'),
-              content: Text(_errorMessage!),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Aceptar'),
-                ),
-              ],
-            ),
-          );
-        }
       }
     }
   }

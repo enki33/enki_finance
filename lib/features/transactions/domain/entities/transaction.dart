@@ -22,6 +22,7 @@ class Transaction with _$Transaction {
     List<String>? tags,
     required DateTime createdAt,
     required DateTime updatedAt,
+    double? exchangeRate,
   }) = _Transaction;
 
   factory Transaction.fromJson(Map<String, dynamic> json) =>

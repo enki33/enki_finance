@@ -117,3 +117,11 @@ abstract class TransactionRepository {
 
   Future<Either<Failure, Unit>> recordBalanceHistory(BalanceHistory history);
 }
+
+abstract class ITransactionRepository {
+  Future<List<Transaction>> getTransactions(TransactionFilter filter);
+  Future<Transaction> createTransaction(Transaction transaction);
+  Future<Transaction> updateTransaction(Transaction transaction);
+  Future<void> deleteTransaction(String id);
+  Future<Transaction> getTransactionById(String id);
+}

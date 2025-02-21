@@ -4,12 +4,10 @@ targets:
       freezed:
         generate_for:
           include:
-            - lib/features/*/domain/entities/**.dart
-            - lib/features/*/data/models/**.dart
+            - lib/features/transactions/domain/entities/**.dart
       json_serializable:
         options:
           explicit_to_json: true
         generate_for:
           include:
-            - lib/features/*/domain/entities/**.dart
-            - lib/features/*/data/models/**.dart 
+            - lib/features/transactions/domain/entities/**.dart 

@@ -24,6 +24,7 @@ class TransactionModel with _$TransactionModel {
     List<String>? tags,
     required DateTime createdAt,
     required DateTime updatedAt,
+    double? exchangeRate,
   }) = _TransactionModel;
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) =>
@@ -47,6 +48,7 @@ class TransactionModel with _$TransactionModel {
       tags: transaction.tags,
       createdAt: transaction.createdAt,
       updatedAt: transaction.updatedAt,
+      exchangeRate: transaction.exchangeRate,
     );
   }
 }
@@ -70,6 +72,7 @@ extension TransactionModelX on TransactionModel {
       tags: tags,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      exchangeRate: this.exchangeRate,
     );
   }
 }

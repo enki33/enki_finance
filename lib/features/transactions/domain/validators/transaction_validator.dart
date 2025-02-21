@@ -79,4 +79,33 @@ class TransactionValidator {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  Either<Failure, Unit> validateAmount(String? value) {
+    if (value == null || value.isEmpty) {
+      return left(ValidationFailure('Por favor ingresa un monto'));
+    }
+
+    final amount = double.tryParse(value.replaceAll(RegExp(r'[^\d.]'), ''));
+    if (amount == null) {
+      return left(ValidationFailure('Por favor ingresa un monto válido'));
+    }
+
+    if (amount <= 0) {
+      return left(ValidationFailure('El monto debe ser mayor a cero'));
+    }
+
+    return right(unit);
+  }
+
+  Either<Failure, Unit> validateDate(DateTime? date) {
+    if (date == null) {
+      return left(ValidationFailure('Por favor selecciona una fecha'));
+    }
+    return right(unit);
+  }
+
+  Either<Failure, Unit> validateTransaction(Transaction transaction) {
+    // Add your transaction validation logic here
+    return right(unit);
+  }
 }

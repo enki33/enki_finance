@@ -1,452 +1,188 @@
 import 'package:fpdart/fpdart.dart';
 import '../../../../core/error/failures.dart';
 import '../../domain/entities/transaction.dart';
-import '../../domain/repositories/transaction_repository.dart';
-import '../../domain/entities/category_analysis.dart';
-import '../../domain/entities/daily_total.dart';
-import '../../domain/entities/balance_history.dart';
 import '../../domain/entities/transaction_filter.dart';
-import '../../domain/entities/transaction_summary.dart' as summary;
+import '../../domain/entities/installment_purchase.dart';
+import '../../domain/entities/recurring_transaction.dart';
+import '../../domain/repositories/i_transaction_repository.dart';
+import '../../domain/exceptions/transaction_exception.dart';
 import '../datasources/transaction_remote_data_source.dart';
+import '../models/transaction_model.dart';
 
-class TransactionRepositoryImpl implements TransactionRepository {
-  final TransactionRemoteDataSource _dataSource;
+class TransactionRepositoryImpl implements ITransactionRepository {
+  final TransactionRemoteDataSource _remoteDataSource;
 
-  const TransactionRepositoryImpl(this._dataSource);
-
-  @override
-  Future<Either<Failure, List<Transaction>>> getTransactionsByDateRange({
-    required String userId,
-    required DateTime startDate,
-    required DateTime endDate,
-    String? transactionTypeId,
-    String? categoryId,
-    String? subcategoryId,
-    String? accountId,
-    String? jarId,
-  }) async {
-    try {
-      final transactions = await _dataSource.getTransactionsByDateRange(
-        userId: userId,
-        startDate: startDate,
-        endDate: endDate,
-        transactionTypeId: transactionTypeId,
-        categoryId: categoryId,
-        subcategoryId: subcategoryId,
-        accountId: accountId,
-        jarId: jarId,
-      );
-      return right(transactions);
-    } catch (e) {
-      return left(ServerFailure(e.toString()));
-    }
-  }
+  const TransactionRepositoryImpl(this._remoteDataSource);
 
   @override
-  Future<Either<Failure, List<CategoryAnalysis>>> analyzeByCategory({
-    required String userId,
-    DateTime? startDate,
-    DateTime? endDate,
-    String? transactionType,
-  }) async {
+  Future<List<Transaction>> getTransactions(TransactionFilter filter) async {
     try {
-      final result = await _dataSource.analyzeByCategory(
-        userId: userId,
-        startDate: startDate,
-        endDate: endDate,
-        transactionType: transactionType,
-      );
-      return right(result);
-    } catch (e) {
-      return left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, double>> calculateAccountBalance({
-    required String accountId,
-    DateTime? asOf,
-  }) async {
-    try {
-      final result = await _dataSource.calculateAccountBalance(
-        accountId: accountId,
-        asOf: asOf,
-      );
-      return right(result);
-    } catch (e) {
-      return left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, double>> calculateJarBalance({
-    required String jarId,
-    DateTime? asOf,
-  }) async {
-    try {
-      final result = await _dataSource.calculateJarBalance(
-        jarId: jarId,
-        asOf: asOf,
-      );
-      return right(result);
-    } catch (e) {
-      return left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, Transaction>> createTransaction(
-      Transaction transaction) async {
-    try {
-      final result = await _dataSource.createTransaction(transaction);
-      return right(result);
-    } catch (e) {
-      return left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, Unit>> deleteTransaction(String transactionId) async {
-    try {
-      await _dataSource.deleteTransaction(transactionId);
-      return right(unit);
-    } catch (e) {
-      return left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, List<DailyTotal>>> getDailyTotals({
-    required String userId,
-    required DateTime startDate,
-    required DateTime endDate,
-    String? transactionTypeId,
-  }) async {
-    try {
-      final result = await _dataSource.getDailyTotals(
-        userId: userId,
-        startDate: startDate,
-        endDate: endDate,
-        transactionTypeId: transactionTypeId,
-      );
-      return right(result);
-    } catch (e) {
-      return left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, List<Transaction>>> getTransactions({
-    required String userId,
-    TransactionFilter? filter,
-  }) async {
-    try {
-      final transactions = await _dataSource.getTransactions(
-        userId: userId,
+      final transactions = await _remoteDataSource.getTransactions(
+        userId: filter.userId,
         filter: filter,
       );
-      return right(transactions);
+      return transactions;
     } catch (e) {
-      return left(ServerFailure(e.toString()));
+      throw TransactionException('Failed to fetch transactions: $e');
     }
   }
 
   @override
-  Future<Either<Failure, Transaction>> updateTransaction(
-      Transaction transaction) async {
+  Future<Transaction> createTransaction(Transaction transaction) async {
     try {
-      final result = await _dataSource.updateTransaction(transaction);
-      return right(result);
+      final model = TransactionModel.fromEntity(transaction);
+      final result = await _remoteDataSource.createTransaction(transaction);
+      return result;
     } catch (e) {
-      return left(ServerFailure(e.toString()));
+      throw TransactionCreationException('Failed to create transaction: $e');
     }
   }
 
   @override
-  Future<Either<Failure, Map<String, double>>> getTransactionSummary({
-    required String userId,
-    required DateTime startDate,
-    required DateTime endDate,
-  }) async {
+  Future<Transaction> updateTransaction(Transaction transaction) async {
     try {
-      final result = await _dataSource.getTransactionSummary(
-        userId: userId,
-        startDate: startDate,
-        endDate: endDate,
+      final model = TransactionModel.fromEntity(transaction);
+      final result = await _remoteDataSource.updateTransaction(transaction);
+      return result;
+    } catch (e) {
+      throw TransactionUpdateException('Failed to update transaction: $e');
+    }
+  }
+
+  @override
+  Future<void> deleteTransaction(String id) async {
+    try {
+      await _remoteDataSource.deleteTransaction(id);
+    } catch (e) {
+      throw TransactionDeletionException('Failed to delete transaction: $e');
+    }
+  }
+
+  @override
+  Future<Transaction> getTransactionById(String id) async {
+    try {
+      final transactions = await _remoteDataSource.getTransactions(
+        userId: '', // We'll filter by ID in the query
+        filter: TransactionFilter(
+          transactionId: id,
+        ),
       );
-      return right(result);
+      if (transactions.isEmpty) {
+        throw TransactionException('Transaction not found');
+      }
+      return transactions.first;
     } catch (e) {
-      return left(ServerFailure(e.toString()));
+      throw TransactionException('Failed to fetch transaction: $e');
     }
   }
 
   @override
-  Future<Either<Failure, List<summary.TransactionSummary>>>
-      getSummaryByDateRange({
-    required String userId,
-    required DateTime startDate,
-    required DateTime endDate,
-  }) async {
+  Future<InstallmentPurchase> createInstallmentPurchase(
+      InstallmentPurchase purchase) async {
     try {
-      final result = await _dataSource.getSummaryByDateRange(
-        userId: userId,
-        startDate: startDate,
-        endDate: endDate,
+      // Create the installment purchase record
+      final createdPurchase =
+          await _remoteDataSource.createInstallmentPurchase(purchase);
+
+      // Create the initial transaction
+      final initialTransaction = Transaction(
+        id: '',
+        userId: createdPurchase.userId,
+        transactionTypeId: 'EXPENSE', // Assuming it's always an expense
+        categoryId: 'INSTALLMENT_PURCHASE', // Special category for installments
+        categoryName: 'Compra en MSI',
+        accountId: createdPurchase.accountId,
+        amount: createdPurchase.installmentAmount,
+        currencyId: 'MXN', // Default to MXN, could be parameterized
+        transactionDate: createdPurchase.startDate,
+        description:
+            '${createdPurchase.description} (1/${createdPurchase.numberOfInstallments} MSI)',
+        notes: createdPurchase.notes,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
-      return right(result);
+
+      await _remoteDataSource.createTransaction(initialTransaction);
+
+      return createdPurchase;
     } catch (e) {
-      return left(ServerFailure(e.toString()));
+      throw TransactionException('Failed to create installment purchase: $e');
     }
   }
 
   @override
-  Future<Either<Failure, List<Transaction>>> searchByTags({
-    required String userId,
-    required List<String> tags,
-  }) async {
+  Future<List<InstallmentPurchase>> getInstallmentPurchases(
+      String userId) async {
     try {
-      final result = await _dataSource.searchByTags(
-        userId: userId,
-        tags: tags,
-      );
-      return right(result);
+      return await _remoteDataSource.getInstallmentPurchases(userId);
     } catch (e) {
-      return left(ServerFailure(e.toString()));
+      throw TransactionException('Failed to fetch installment purchases: $e');
     }
   }
 
   @override
-  Future<Either<Failure, List<Transaction>>> searchByNotes({
-    required String userId,
-    required String searchText,
-  }) async {
+  Future<void> updateInstallmentPurchase(InstallmentPurchase purchase) async {
     try {
-      final result = await _dataSource.searchByNotes(
-        userId: userId,
-        searchText: searchText,
-      );
-      return right(result);
+      await _remoteDataSource.updateInstallmentPurchase(purchase);
     } catch (e) {
-      return left(ServerFailure(e.toString()));
+      throw TransactionException('Failed to update installment purchase: $e');
     }
   }
 
   @override
-  Future<Either<Failure, bool>> validateTransaction({
-    required Transaction transaction,
-    required bool isUpdate,
-  }) async {
+  Future<RecurringTransaction> createRecurringTransaction(
+      RecurringTransaction transaction) async {
     try {
-      final result = await _dataSource.validateTransaction(
-        transaction: transaction,
-        isUpdate: isUpdate,
-      );
-      return right(result);
-    } catch (e) {
-      return left(ServerFailure(e.toString()));
-    }
-  }
+      // Create the recurring transaction record
+      final createdTransaction =
+          await _remoteDataSource.createRecurringTransaction(transaction);
 
-  @override
-  Future<Either<Failure, List<BalanceHistory>>> getAccountBalanceHistory({
-    required String accountId,
-    DateTime? startDate,
-    DateTime? endDate,
-  }) async {
-    try {
-      final result = await _dataSource.getAccountBalanceHistory(
-        accountId: accountId,
-        startDate: startDate,
-        endDate: endDate,
-      );
-      return right(result);
-    } catch (e) {
-      return left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, List<BalanceHistory>>> getJarBalanceHistory({
-    required String jarId,
-    DateTime? startDate,
-    DateTime? endDate,
-  }) async {
-    try {
-      final result = await _dataSource.getJarBalanceHistory(
-        jarId: jarId,
-        startDate: startDate,
-        endDate: endDate,
-      );
-      return right(result);
-    } catch (e) {
-      return left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, Unit>> recordBalanceHistory(
-      BalanceHistory history) async {
-    try {
-      await _dataSource.recordBalanceHistory(history);
-      return right(unit);
-    } catch (e) {
-      return left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, Unit>> validateAccount(String accountId) async {
-    try {
-      final result = await _dataSource.validateTransaction(
-        transaction: Transaction(
+      // Create the first occurrence if the start date is today
+      if (transaction.startDate.isAtSameMomentAs(DateTime.now())) {
+        final initialTransaction = Transaction(
           id: '',
-          userId: '',
-          transactionTypeId: '',
-          categoryId: '',
-          categoryName: 'Validation',
-          accountId: accountId,
-          amount: 0,
-          currencyId: '',
-          transactionDate: DateTime.now(),
+          userId: createdTransaction.userId,
+          transactionTypeId: createdTransaction.transactionTypeId,
+          categoryId: createdTransaction.categoryId,
+          categoryName: createdTransaction.name,
+          subcategoryId: createdTransaction.subcategoryId,
+          accountId: createdTransaction.accountId,
+          jarId: createdTransaction.jarId,
+          amount: createdTransaction.amount,
+          currencyId: createdTransaction.currencyId,
+          transactionDate: createdTransaction.startDate,
+          description:
+              createdTransaction.description ?? createdTransaction.name,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        ),
-        isUpdate: false,
-      );
-      return result ? right(unit) : left(ValidationFailure('Invalid account'));
+        );
+
+        await _remoteDataSource.createTransaction(initialTransaction);
+      }
+
+      return createdTransaction;
     } catch (e) {
-      return left(ServerFailure(e.toString()));
+      throw TransactionException('Failed to create recurring transaction: $e');
     }
   }
 
   @override
-  Future<Either<Failure, Unit>> validateCategory({
-    required String categoryId,
-    String? subcategoryId,
-  }) async {
+  Future<List<RecurringTransaction>> getRecurringTransactions(
+      String userId) async {
     try {
-      final result = await _dataSource.validateTransaction(
-        transaction: Transaction(
-          id: '',
-          userId: '',
-          transactionTypeId: '',
-          categoryId: categoryId,
-          categoryName: 'Validation',
-          subcategoryId: subcategoryId,
-          accountId: '',
-          amount: 0,
-          currencyId: '',
-          transactionDate: DateTime.now(),
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-        isUpdate: false,
-      );
-      return result ? right(unit) : left(ValidationFailure('Invalid category'));
+      return await _remoteDataSource.getRecurringTransactions(userId);
     } catch (e) {
-      return left(ServerFailure(e.toString()));
+      throw TransactionException('Failed to fetch recurring transactions: $e');
     }
   }
 
   @override
-  Future<Either<Failure, Unit>> validateCreditLimit({
-    required String accountId,
-    required double amount,
-  }) async {
+  Future<void> updateRecurringTransaction(
+      RecurringTransaction transaction) async {
     try {
-      final result = await _dataSource.validateTransaction(
-        transaction: Transaction(
-          id: '',
-          userId: '',
-          transactionTypeId: '',
-          categoryId: '',
-          categoryName: 'Validation',
-          accountId: accountId,
-          amount: amount,
-          currencyId: '',
-          transactionDate: DateTime.now(),
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-        isUpdate: false,
-      );
-      return result
-          ? right(unit)
-          : left(ValidationFailure('Credit limit exceeded'));
+      await _remoteDataSource.updateRecurringTransaction(transaction);
     } catch (e) {
-      return left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, Unit>> validateCurrency(String currencyId) async {
-    try {
-      final result = await _dataSource.validateTransaction(
-        transaction: Transaction(
-          id: '',
-          userId: '',
-          transactionTypeId: '',
-          categoryId: '',
-          categoryName: 'Validation',
-          accountId: '',
-          amount: 0,
-          currencyId: currencyId,
-          transactionDate: DateTime.now(),
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-        isUpdate: false,
-      );
-      return result ? right(unit) : left(ValidationFailure('Invalid currency'));
-    } catch (e) {
-      return left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, Unit>> validateBalance(Transaction transaction) async {
-    try {
-      final result = await _dataSource.validateTransaction(
-        transaction: transaction,
-        isUpdate: false,
-      );
-      return result
-          ? right(unit)
-          : left(ValidationFailure('Insufficient balance'));
-    } catch (e) {
-      return left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, Unit>> validateJarRequirement({
-    String? jarId,
-    String? subcategoryId,
-  }) async {
-    try {
-      final result = await _dataSource.validateTransaction(
-        transaction: Transaction(
-          id: '',
-          userId: '',
-          transactionTypeId: '',
-          categoryId: '',
-          categoryName: 'Validation',
-          subcategoryId: subcategoryId,
-          accountId: '',
-          amount: 0,
-          currencyId: '',
-          jarId: jarId,
-          transactionDate: DateTime.now(),
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-        isUpdate: false,
-      );
-      return result
-          ? right(unit)
-          : left(ValidationFailure('Jar is required for this category'));
-    } catch (e) {
-      return left(ServerFailure(e.toString()));
+      throw TransactionException('Failed to update recurring transaction: $e');
     }
   }
 }
